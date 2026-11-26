@@ -256,6 +256,12 @@
         touch-action: none;
       }
 
+      .canvas-mount canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
       /* Top-Left Stage Kicker (Clean unboxed typography) */
       .stage-caption {
         position: absolute;
@@ -1301,13 +1307,42 @@
     <script type="module">
       const threeSpec = ['thr', 'ee'].join('');
       const addonsBase = `${threeSpec}/addons`;
-      const THREE = await import(/* @vite-ignore */ threeSpec);
-      const { OrbitControls } = await import(
-        /* @vite-ignore */ `${addonsBase}/controls/OrbitControls.js`
-      );
-      const { RoomEnvironment } = await import(
-        /* @vite-ignore */ `${addonsBase}/environments/RoomEnvironment.js`
-      );
+
+      async function loadThreeModules() {
+        try {
+          const [threeMod, orbitMod, envMod] = await Promise.all([
+            import(/* @vite-ignore */ threeSpec),
+            import(/* @vite-ignore */ `${addonsBase}/controls/OrbitControls.js`),
+            import(/* @vite-ignore */ `${addonsBase}/environments/RoomEnvironment.js`)
+          ]);
+          return {
+            THREE: threeMod,
+            OrbitControls: orbitMod.OrbitControls,
+            RoomEnvironment: envMod.RoomEnvironment
+          };
+        } catch (primaryErr) {
+          const fallbackBase = 'https://esm.sh/three@0.170.0';
+          const [threeMod, orbitMod, envMod] = await Promise.all([
+            import(/* @vite-ignore */ fallbackBase),
+            import(/* @vite-ignore */ `${fallbackBase}/examples/jsm/controls/OrbitControls.js`),
+            import(/* @vite-ignore */ `${fallbackBase}/examples/jsm/environments/RoomEnvironment.js`)
+          ]);
+          return {
+            THREE: threeMod,
+            OrbitControls: orbitMod.OrbitControls,
+            RoomEnvironment: envMod.RoomEnvironment
+          };
+        }
+      }
+
+      let THREE, OrbitControls, RoomEnvironment;
+      try {
+        ({ THREE, OrbitControls, RoomEnvironment } = await loadThreeModules());
+      } catch (cdnErr) {
+        const fb = document.getElementById('webglFallback');
+        if (fb) fb.classList.add('visible');
+        throw cdnErr;
+      }
 
       // =========================================================================
       // 1. EDUCATIONAL CURRICULUM DATA (5 Categories + 5 OX Quiz Questions)
@@ -2304,9 +2339,23 @@
 
           // Center label focused on top face (u ~ 0.25)
           const cx = w * 0.25;
+          const rx0 = cx - 126;
+          const ry0 = 76;
+          const rw = 252;
+          const rh = 224;
+          const rr = 24;
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
-          ctx.roundRect(cx - 126, 76, 252, 224, 24);
+          ctx.moveTo(rx0 + rr, ry0);
+          ctx.lineTo(rx0 + rw - rr, ry0);
+          ctx.quadraticCurveTo(rx0 + rw, ry0, rx0 + rw, ry0 + rr);
+          ctx.lineTo(rx0 + rw, ry0 + rh - rr);
+          ctx.quadraticCurveTo(rx0 + rw, ry0 + rh, rx0 + rw - rr, ry0 + rh);
+          ctx.lineTo(rx0 + rr, ry0 + rh);
+          ctx.quadraticCurveTo(rx0, ry0 + rh, rx0, ry0 + rh - rr);
+          ctx.lineTo(rx0, ry0 + rr);
+          ctx.quadraticCurveTo(rx0, ry0, rx0 + rr, ry0);
+          ctx.closePath();
           ctx.fill();
           ctx.strokeStyle = '#059669';
           ctx.lineWidth = 6;
@@ -3683,6 +3732,10 @@
 
       function afterDraw(cb) {
         const gl = renderer.getContext();
+        if (!gl || typeof gl.fenceSync !== 'function') {
+          frameId = window.setTimeout(cb, 80);
+          return;
+        }
         const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
         gl.flush();
         const poll = () => {
