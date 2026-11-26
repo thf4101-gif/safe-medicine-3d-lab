@@ -1,0 +1,6 @@
+{
+  "name": "바른약 3D 연구실 — 올바른 의약품 사용법",
+  "description": "초등학생과 청소년을 위한 Three.js 기반 약물 오남용 예방 및 올바른 의약품 사용법 3D 인터랙티브 교육 웹앱",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

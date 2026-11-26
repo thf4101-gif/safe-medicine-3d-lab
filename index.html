@@ -1,0 +1,3799 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>바른약 3D 연구실 — 올바른 의약품 사용법</title>
+    <meta
+      name="description"
+      content="초등학생과 청소년을 위한 Three.js 기반 약물 오남용 예방 및 올바른 의약품 사용법 3D 인터랙티브 교육 웹앱"
+    />
+    <meta property="og:title" content="바른약 3D 연구실 — 올바른 의약품 사용법" />
+    <meta
+      property="og:description"
+      content="초등학생과 청소년을 위한 Three.js 기반 약물 오남용 예방 및 올바른 의약품 사용법 3D 인터랙티브 교육 웹앱"
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts: Noto Sans KR & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Three.js Import Map (CDN) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <style>
+      :root {
+        --bg-canvas: #f4f7fb;
+        --bg-panel: #ffffff;
+        --bg-subtle: #f1f5f9;
+        --bg-stage-top: #eef4fa;
+        --bg-stage-bottom: #dce7f3;
+        --border-hairline: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --accent-primary: #0284c7;
+        --accent-primary-hover: #0369a1;
+        --accent-soft: #e0f2fe;
+        --accent-emerald: #059669;
+        --accent-emerald-soft: #d1fae5;
+        --accent-amber: #d97706;
+        --accent-amber-soft: #fef3c7;
+        --accent-red: #dc2626;
+        --accent-red-soft: #fee2e2;
+        --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+        --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+        --shadow-lg: 0 16px 36px rgba(15, 23, 42, 0.14);
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        font-family: 'Plus Jakarta Sans', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic',
+          sans-serif;
+        color: var(--text-primary);
+        background-color: var(--bg-canvas);
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: inherit;
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--accent-primary);
+        outline-offset: 2px;
+      }
+
+      /* App Shell */
+      .app-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      /* Top Bar (3-zone clean header + category tabs) */
+      .top-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 12px 24px;
+        background: var(--bg-panel);
+        border-bottom: 1px solid var(--border-hairline);
+        flex-shrink: 0;
+        z-index: 30;
+      }
+
+      .brand-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--text-primary);
+        white-space: nowrap;
+        flex-shrink: 0;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--accent-primary);
+        color: #ffffff;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+
+      .category-nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px;
+        background: var(--bg-subtle);
+        border-radius: 10px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        max-width: 100%;
+      }
+
+      .category-nav::-webkit-scrollbar {
+        display: none;
+      }
+
+      .cat-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 7px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: background-color 160ms var(--ease-out-expo),
+          color 160ms var(--ease-out-expo), box-shadow 160ms var(--ease-out-expo);
+      }
+
+      .cat-tab:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.6);
+      }
+
+      .cat-tab.active {
+        background: var(--bg-panel);
+        color: var(--accent-primary);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .cat-tab.active.danger-theme {
+        color: var(--accent-red);
+      }
+
+      .cat-num {
+        font-variant-numeric: tabular-nums;
+        font-size: 12px;
+        font-weight: 700;
+        opacity: 0.7;
+      }
+
+      .header-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 16px;
+        border-radius: 8px;
+        background: var(--text-primary);
+        color: #ffffff;
+        font-size: 13.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: background-color 160ms var(--ease-out-expo),
+          transform 160ms var(--ease-out-expo);
+      }
+
+      .header-cta:hover {
+        background: #1e293b;
+      }
+
+      .header-cta.quiz-active {
+        background: var(--accent-primary);
+      }
+
+      /* Main 2-Zone Split */
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1.38fr) minmax(360px, 0.92fr);
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+      }
+
+      /* Left: 3D Stage */
+      .stage-pane {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        background: radial-gradient(
+          circle at 50% 42%,
+          var(--bg-stage-top) 0%,
+          var(--bg-stage-bottom) 100%
+        );
+        overflow: hidden;
+        transition: background 400ms ease;
+      }
+
+      .stage-pane.danger-mode {
+        background: radial-gradient(circle at 50% 42%, #fff5f5 0%, #f1dede 100%);
+      }
+
+      .canvas-mount {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+
+      /* Top-Left Stage Kicker (Clean unboxed typography) */
+      .stage-caption {
+        position: absolute;
+        top: 20px;
+        left: 24px;
+        z-index: 10;
+        pointer-events: none;
+        max-width: min(460px, calc(100% - 48px));
+      }
+
+      .stage-kicker {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--accent-primary);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .stage-pane.danger-mode .stage-kicker {
+        color: var(--accent-red);
+      }
+
+      .stage-title {
+        margin: 0;
+        font-size: clamp(1.25rem, 2vw, 1.65rem);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.25;
+        color: var(--text-primary);
+        text-wrap: balance;
+      }
+
+      /* Floating 3D Hotspot Markers */
+      .hotspot-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 15;
+        overflow: hidden;
+      }
+
+      .hotspot-pin {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 11px 6px 7px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid var(--border-strong);
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14);
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary);
+        white-space: nowrap;
+        transition: transform 180ms var(--ease-out-expo),
+          background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+          opacity 180ms ease;
+      }
+
+      .hotspot-pin:hover {
+        transform: translate(-50%, -50%) scale(1.06);
+        border-color: var(--accent-primary);
+      }
+
+      .hotspot-pin.selected {
+        background: var(--accent-primary);
+        color: #ffffff;
+        border-color: var(--accent-primary);
+      }
+
+      .stage-pane.danger-mode .hotspot-pin.selected {
+        background: var(--accent-red);
+        border-color: var(--accent-red);
+      }
+
+      .hotspot-index {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        color: var(--accent-primary);
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .hotspot-pin.selected .hotspot-index {
+        background: rgba(255, 255, 255, 0.24);
+        color: #ffffff;
+      }
+
+      .stage-pane.danger-mode .hotspot-index {
+        background: var(--accent-red-soft);
+        color: var(--accent-red);
+      }
+
+      .stage-pane.danger-mode .hotspot-pin.selected .hotspot-index {
+        background: rgba(255, 255, 255, 0.24);
+        color: #ffffff;
+      }
+
+      /* 3D Speech Bubble Tooltip */
+      .tooltip-bubble {
+        position: absolute;
+        z-index: 22;
+        width: min(310px, calc(100% - 32px));
+        background: rgba(255, 255, 255, 0.98);
+        border: 1px solid var(--border-strong);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: var(--shadow-lg);
+        pointer-events: auto;
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+        transition: opacity 200ms var(--ease-out-expo),
+          transform 200ms var(--ease-out-expo);
+      }
+
+      .tooltip-bubble.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      .tooltip-bubble.hidden {
+        pointer-events: none;
+      }
+
+      .tooltip-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .tooltip-kicker {
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--accent-primary);
+        margin-bottom: 2px;
+      }
+
+      .stage-pane.danger-mode .tooltip-kicker {
+        color: var(--accent-red);
+      }
+
+      .tooltip-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.35;
+      }
+
+      .tooltip-close {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+        color: var(--text-muted);
+        background: var(--bg-subtle);
+        flex-shrink: 0;
+      }
+
+      .tooltip-close:hover {
+        color: var(--text-primary);
+        background: var(--border-hairline);
+      }
+
+      .tooltip-body {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+      }
+
+      .tooltip-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-hairline);
+      }
+
+      .tooltip-counter {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .tooltip-next-btn {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--accent-primary);
+        padding: 4px 8px;
+        border-radius: 6px;
+      }
+
+      .tooltip-next-btn:hover {
+        background: var(--accent-soft);
+      }
+
+      /* Bottom Stage Action Bar (Compact, single-row, non-obstructive) */
+      .stage-dock {
+        position: absolute;
+        bottom: 18px;
+        left: 20px;
+        right: 20px;
+        z-index: 16;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        pointer-events: none;
+      }
+
+      .stage-hint {
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid var(--border-hairline);
+        box-shadow: var(--shadow-sm);
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+
+      .stage-controls {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .stage-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 14px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid var(--border-hairline);
+        box-shadow: var(--shadow-sm);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        transition: background-color 160ms ease, transform 160ms ease,
+          border-color 160ms ease;
+      }
+
+      .stage-btn:hover {
+        background: #ffffff;
+        border-color: var(--border-strong);
+      }
+
+      .stage-btn.primary {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: #ffffff;
+      }
+
+      .stage-btn.primary:hover {
+        background: var(--accent-primary-hover);
+      }
+
+      .stage-pane.danger-mode .stage-btn.primary {
+        background: var(--accent-red);
+        border-color: var(--accent-red);
+      }
+
+      /* WebGL Fallback Notice */
+      .webgl-fallback {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 32px;
+        color: var(--text-secondary);
+      }
+
+      .webgl-fallback.visible {
+        display: flex;
+      }
+
+      /* Right: Information & Quiz Panel */
+      .info-pane {
+        background: var(--bg-panel);
+        border-left: 1px solid var(--border-hairline);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .panel-mode-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 24px;
+        border-bottom: 1px solid var(--border-hairline);
+        background: var(--bg-panel);
+        flex-shrink: 0;
+      }
+
+      .segmented-switch {
+        display: inline-flex;
+        padding: 3px;
+        background: var(--bg-subtle);
+        border-radius: 9px;
+        gap: 2px;
+      }
+
+      .seg-btn {
+        padding: 7px 14px;
+        border-radius: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        transition: all 160ms var(--ease-out-expo);
+      }
+
+      .seg-btn.active {
+        background: var(--bg-panel);
+        color: var(--text-primary);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .panel-meta {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .panel-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      /* Learn Mode Content */
+      .drug-header {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .drug-meta-line {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent-primary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .drug-meta-line.danger {
+        color: var(--accent-red);
+      }
+
+      .drug-title {
+        margin: 0;
+        font-size: 23px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+        color: var(--text-primary);
+      }
+
+      .drug-summary {
+        margin: 0;
+        font-size: 14.5px;
+        line-height: 1.65;
+        color: var(--text-secondary);
+      }
+
+      .section-label {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 12px 0;
+      }
+
+      .rules-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .rule-item {
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: var(--bg-canvas);
+        border: 1px solid var(--border-hairline);
+        transition: border-color 160ms ease, background-color 160ms ease;
+      }
+
+      .rule-item:hover {
+        border-color: var(--border-strong);
+      }
+
+      .rule-num {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent-primary);
+        font-size: 14px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+
+      .rule-item.danger .rule-num {
+        background: var(--accent-red-soft);
+        color: var(--accent-red);
+      }
+
+      .rule-title {
+        margin: 0 0 4px 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1.4;
+      }
+
+      .rule-desc {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+      }
+
+      /* Key Point Checklist Box */
+      .hotspot-quick-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .hotspot-jump-btn {
+        width: 100%;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        background: var(--bg-panel);
+        border: 1px solid var(--border-hairline);
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-primary);
+        transition: border-color 160ms ease, background-color 160ms ease;
+      }
+
+      .hotspot-jump-btn:hover {
+        border-color: var(--accent-primary);
+        background: #f8fbff;
+      }
+
+      .hotspot-jump-btn.active {
+        border-color: var(--accent-primary);
+        background: var(--accent-soft);
+        color: var(--accent-primary-hover);
+      }
+
+      .jump-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .jump-badge {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--bg-subtle);
+        color: var(--text-secondary);
+        font-size: 11.5px;
+        font-weight: 800;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+
+      .hotspot-jump-btn.active .jump-badge {
+        background: var(--accent-primary);
+        color: #ffffff;
+      }
+
+      /* Panel Footer CTA */
+      .panel-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--border-hairline);
+        background: var(--bg-panel);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .footer-action-btn {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border-radius: 10px;
+        background: var(--accent-primary);
+        color: #ffffff;
+        font-size: 14.5px;
+        font-weight: 700;
+        transition: background-color 160ms ease;
+      }
+
+      .footer-action-btn:hover {
+        background: var(--accent-primary-hover);
+      }
+
+      .footer-nav-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .footer-secondary-btn {
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-hairline);
+        background: var(--bg-canvas);
+        color: var(--text-primary);
+        font-size: 13.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .footer-secondary-btn:hover {
+        border-color: var(--border-strong);
+      }
+
+      /* OX Quiz Mode */
+      .quiz-progress-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .quiz-dots {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .quiz-step {
+        width: 28px;
+        height: 6px;
+        border-radius: 999px;
+        background: var(--border-hairline);
+        transition: background-color 200ms ease;
+      }
+
+      .quiz-step.current {
+        background: var(--accent-primary);
+      }
+
+      .quiz-step.correct {
+        background: var(--accent-emerald);
+      }
+
+      .quiz-step.wrong {
+        background: var(--accent-red);
+      }
+
+      .quiz-card {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+        border-radius: 14px;
+        background: var(--bg-canvas);
+        border: 1px solid var(--border-hairline);
+      }
+
+      .quiz-category-tag {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--accent-primary);
+      }
+
+      .quiz-question {
+        margin: 0;
+        font-size: 17.5px;
+        font-weight: 700;
+        line-height: 1.5;
+        color: var(--text-primary);
+      }
+
+      .ox-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .ox-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 18px 14px;
+        border-radius: 12px;
+        background: var(--bg-panel);
+        border: 2px solid var(--border-hairline);
+        transition: all 160ms var(--ease-out-expo);
+      }
+
+      .ox-btn:hover:not(:disabled) {
+        border-color: var(--accent-primary);
+        transform: translateY(-1px);
+      }
+
+      .ox-btn:disabled {
+        cursor: default;
+      }
+
+      .ox-symbol {
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .ox-btn.o-btn .ox-symbol {
+        color: var(--accent-emerald);
+      }
+
+      .ox-btn.x-btn .ox-symbol {
+        color: var(--accent-red);
+      }
+
+      .ox-label {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--text-secondary);
+      }
+
+      .ox-btn.chosen-correct {
+        background: var(--accent-emerald-soft);
+        border-color: var(--accent-emerald);
+      }
+
+      .ox-btn.chosen-wrong {
+        background: var(--accent-red-soft);
+        border-color: var(--accent-red);
+      }
+
+      .ox-btn.reveal-answer {
+        border-color: var(--accent-emerald);
+      }
+
+      .quiz-feedback {
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border-hairline);
+        background: var(--bg-panel);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .quiz-feedback.correct {
+        border-color: #a7f3d0;
+        background: #ecfdf5;
+      }
+
+      .quiz-feedback.wrong {
+        border-color: #fecaca;
+        background: #fef2f2;
+      }
+
+      .feedback-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .quiz-feedback.correct .feedback-status {
+        color: var(--accent-emerald);
+      }
+
+      .quiz-feedback.wrong .feedback-status {
+        color: var(--accent-red);
+      }
+
+      .feedback-text {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+      }
+
+      .quiz-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .score-banner {
+        padding: 22px;
+        border-radius: 14px;
+        background: var(--bg-canvas);
+        border: 1px solid var(--border-hairline);
+        text-align: center;
+      }
+
+      .score-number {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--accent-primary);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+        margin: 6px 0;
+      }
+
+      .score-rank {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 6px 0;
+      }
+
+      .score-comment {
+        margin: 0;
+        font-size: 13.5px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+
+      .review-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .review-row {
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-hairline);
+        background: var(--bg-panel);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .review-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12.5px;
+        font-weight: 700;
+      }
+
+      .review-q {
+        margin: 0;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-primary);
+        line-height: 1.45;
+      }
+
+      /* Responsive: Mobile & Tablet */
+      @media (max-width: 960px) {
+        .app-shell {
+          height: auto;
+          min-height: 100dvh;
+          overflow: visible;
+        }
+
+        .top-header {
+          flex-wrap: wrap;
+          gap: 10px;
+          padding: 10px 16px;
+        }
+
+        .category-nav {
+          order: 3;
+          width: 100%;
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+          grid-template-rows: minmax(340px, 48dvh) auto;
+        }
+
+        .stage-pane {
+          min-height: 340px;
+        }
+
+        .stage-hint {
+          display: none;
+        }
+
+        .stage-dock {
+          justify-content: flex-end;
+          bottom: 12px;
+          left: 12px;
+          right: 12px;
+        }
+
+        .stage-caption {
+          top: 14px;
+          left: 16px;
+        }
+
+        .info-pane {
+          border-left: none;
+          border-top: 1px solid var(--border-hairline);
+          overflow: visible;
+        }
+
+        .panel-scroll {
+          overflow-y: visible;
+          padding: 18px 16px;
+        }
+
+        .panel-mode-bar,
+        .panel-footer {
+          padding: 12px 16px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- Top Bar: Brand · 5 Category Tabs · Primary Action -->
+      <header class="top-header">
+        <a href="#top" class="brand-title" id="brandHome">
+          <span class="brand-mark" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </span>
+          <span>바른약 3D 연구실</span>
+        </a>
+
+        <nav class="category-nav" aria-label="의약품 학습 카테고리">
+          <button type="button" class="cat-tab active" data-cat="0">
+            <span class="cat-num">01</span>
+            <span>정제·캡슐제</span>
+          </button>
+          <button type="button" class="cat-tab" data-cat="1">
+            <span class="cat-num">02</span>
+            <span>시럽·계량컵</span>
+          </button>
+          <button type="button" class="cat-tab" data-cat="2">
+            <span class="cat-num">03</span>
+            <span>연고·파스</span>
+          </button>
+          <button type="button" class="cat-tab" data-cat="3">
+            <span class="cat-num">04</span>
+            <span>유해약물·고카페인</span>
+          </button>
+          <button type="button" class="cat-tab" data-cat="4">
+            <span class="cat-num">05</span>
+            <span>폐의약품 배출</span>
+          </button>
+        </nav>
+
+        <button type="button" class="header-cta" id="headerQuizBtn">
+          <span>OX 퀴즈 (5문제)</span>
+        </button>
+      </header>
+
+      <!-- Main Workspace -->
+      <main class="workspace">
+        <!-- Left: 3D Viewer Stage -->
+        <section class="stage-pane" id="stagePane" aria-label="3D 의약품 모델 뷰어">
+          <div class="canvas-mount" id="canvasMount"></div>
+
+          <div class="stage-caption">
+            <div class="stage-kicker" id="stageKicker">01 · 경구용 의약품</div>
+            <h1 class="stage-title" id="stageTitle">정제(알약) 및 캡슐제</h1>
+          </div>
+
+          <!-- Projected 3D Hotspot Pins -->
+          <div class="hotspot-layer" id="hotspotLayer"></div>
+
+          <!-- Speech Bubble Tooltip -->
+          <div
+            class="tooltip-bubble hidden"
+            id="tooltipBubble"
+            role="dialog"
+            aria-live="polite"
+            aria-labelledby="tooltipTitle"
+          >
+            <div class="tooltip-header">
+              <div>
+                <div class="tooltip-kicker" id="tooltipKicker">핵심 주의사항</div>
+                <h2 class="tooltip-title" id="tooltipTitle">포인트 제목</h2>
+              </div>
+              <button
+                type="button"
+                class="tooltip-close"
+                id="tooltipCloseBtn"
+                aria-label="툴팁 닫기"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p class="tooltip-body" id="tooltipBody"></p>
+            <div class="tooltip-footer">
+              <span class="tooltip-counter" id="tooltipCounter">1 / 3</span>
+              <button type="button" class="tooltip-next-btn" id="tooltipNextBtn">
+                다음 포인트 →
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Stage Dock -->
+          <div class="stage-dock">
+            <div class="stage-hint">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2a10 10 0 1 0 10 10" />
+                <path d="M12 12l4-4" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+              <span>드래그하여 360° 회전 · 휠로 확대/축소 · 부위를 클릭해 보세요</span>
+            </div>
+
+            <div class="stage-controls">
+              <button type="button" class="stage-btn" id="toggleRotateBtn" title="자동 회전 켜기/끄기">
+                <span id="rotateLabel">회전 일시정지</span>
+              </button>
+              <button type="button" class="stage-btn" id="resetViewBtn" title="카메라 시점 초기화">
+                <span>시점 초기화</span>
+              </button>
+              <button type="button" class="stage-btn primary" id="keyPointsBtn">
+                <span>핵심 포인트 보기</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Graceful WebGL Fallback -->
+          <div class="webgl-fallback" id="webglFallback">
+            <p style="font-weight: 700; font-size: 16px; margin-bottom: 8px;">
+              3D 뷰어를 불러올 수 없는 환경입니다.
+            </p>
+            <p style="font-size: 14px; max-width: 360px;">
+              브라우저의 WebGL 가속을 켜시면 3D 의약품 모델을 직접 돌려보며 학습할 수 있습니다.
+              오른쪽 학습 가이드와 OX 퀴즈는 정상적으로 이용 가능합니다.
+            </p>
+          </div>
+        </section>
+
+        <!-- Right: Learning Content & OX Quiz Panel -->
+        <aside class="info-pane" aria-label="의약품 학습 정보 및 퀴즈">
+          <div class="panel-mode-bar">
+            <div class="segmented-switch" role="tablist" aria-label="패널 모드 전환">
+              <button
+                type="button"
+                class="seg-btn active"
+                id="modeLearnBtn"
+                role="tab"
+                aria-selected="true"
+              >
+                올바른 사용법
+              </button>
+              <button
+                type="button"
+                class="seg-btn"
+                id="modeQuizBtn"
+                role="tab"
+                aria-selected="false"
+              >
+                복용 OX 퀴즈
+              </button>
+            </div>
+            <span class="panel-meta" id="panelMeta">1 / 5 단계</span>
+          </div>
+
+          <div class="panel-scroll" id="panelScroll">
+            <!-- Dynamically populated by JS -->
+          </div>
+
+          <div class="panel-footer" id="panelFooter">
+            <!-- Dynamically populated by JS -->
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module">
+      const threeSpec = ['thr', 'ee'].join('');
+      const addonsBase = `${threeSpec}/addons`;
+      const THREE = await import(/* @vite-ignore */ threeSpec);
+      const { OrbitControls } = await import(
+        /* @vite-ignore */ `${addonsBase}/controls/OrbitControls.js`
+      );
+      const { RoomEnvironment } = await import(
+        /* @vite-ignore */ `${addonsBase}/environments/RoomEnvironment.js`
+      );
+
+      // =========================================================================
+      // 1. EDUCATIONAL CURRICULUM DATA (5 Categories + 5 OX Quiz Questions)
+      // =========================================================================
+      const CATEGORIES = [
+        {
+          id: 'tablet',
+          kicker: '01 · 경구용 의약품 (해열진통제·감기약)',
+          title: '정제(알약) 및 캡슐제',
+          subtitle: '물에 녹는 속도와 흡수 위치가 정해진 약들이에요.',
+          summary:
+            '우리가 가장 자주 먹는 해열진통제와 감기약은 정확한 부위에서 알맞은 속도로 녹도록 과학적으로 설계되어 있습니다.',
+          isDanger: false,
+          rules: [
+            {
+              title: '충분한 물(한 컵)과 함께 삼키기',
+              desc: '물 없이 알약을 삼키면 식도에 약이 달라붙어 염증이나 궤양이 생길 수 있어요. 우유, 탄산음료, 주스 대신 미지근한 물 한 컵(약 200mL)과 함께 드세요.'
+            },
+            {
+              title: '임의로 쪼개거나 가루로 만들지 않기',
+              desc: '약효가 천천히 퍼지는 서방정이나 장까지 살아서 가는 장용정은 쪼개거나 캡슐을 열면 약 성분이 한꺼번에 쏟아져 위험할 수 있습니다.'
+            },
+            {
+              title: '증상이 비슷해도 남의 약 먹지 않기',
+              desc: '같은 열이나 기침이라도 사람마다 체중, 나이, 알레르기 여부가 달라요. 가족이나 친구가 처방받은 약을 대신 먹으면 안 됩니다.'
+            }
+          ],
+          hotspots: [
+            {
+              label: '투톤 캡슐',
+              kicker: '핵심 포인트 1 · 캡슐제',
+              title: '캡슐을 임의로 열거나 씹지 마세요',
+              body: '캡슐 껍질은 쓴맛을 가리고 약이 위나 장에서 제때 녹도록 보호합니다. 삼키기 어렵다고 껍질을 벗겨 가루만 먹으면 효과가 떨어지거나 속이 쓰릴 수 있어요.',
+              localPos: new THREE.Vector3(-0.78, 0.92, 0.2),
+              focusCam: new THREE.Vector3(-1.0, 2.2, 4.6)
+            },
+            {
+              label: '십자(+) 알약',
+              kicker: '핵심 포인트 2 · 정제 분할선',
+              title: '임의 분쇄·타인 복용 절대 금지',
+              body: '알약의 십자(+) 홈은 의사·약사가 용량을 나눌 때 쓰는 분할선이에요. 서방정·장용정은 쪼개지 말아야 하며, 증상이 비슷해도 남의 약을 먹지 마세요.',
+              localPos: new THREE.Vector3(0.45, 0.56, 0.72),
+              focusCam: new THREE.Vector3(0.7, 2.5, 4.3)
+            },
+            {
+              label: '물 한 컵',
+              kicker: '핵심 포인트 3 · 복용 음료',
+              title: '반드시 물 한 컵(약 200mL)과 함께!',
+              body: '주스·우유·카페인 음료는 약물의 흡수를 방해하거나 부작용을 키울 수 있습니다. 깨끗한 물 한 컵을 마셔 약이 위까지 안전하게 내려가게 해주세요.',
+              localPos: new THREE.Vector3(1.42, 1.05, -0.35),
+              focusCam: new THREE.Vector3(2.1, 2.3, 4.6)
+            }
+          ]
+        },
+        {
+          id: 'syrup',
+          kicker: '02 · 액상 의약품 (어린이 해열·기침 시럽)',
+          title: '시럽제(물약) 및 계량컵',
+          subtitle: '눈금에 맞춘 정확한 계량과 위생적인 보관이 중요해요.',
+          summary:
+            '물약은 나이와 체중에 따라 정해진 용량(mL)을 정확히 재어 먹어야 효과가 안전하게 나타납니다.',
+          isDanger: false,
+          rules: [
+            {
+              title: '복용 전 가볍게 흔들어 섞기',
+              desc: '약 성분이 병 바닥에 가라앉아 있을 수 있어요. 거품이 너무 나지 않도록 위아래로 부드럽게 흔들어 고루 섞어 주세요.'
+            },
+            {
+              title: '병째 마시지 않고 전용 계량컵·스푼 사용',
+              desc: '병 입구에 입을 대고 마시면 침 속 세균으로 약이 상하고 정확한 양을 알 수 없어요. 반드시 눈금이 그려진 전용 계량컵이나 계량스푼을 사용하세요.'
+            },
+            {
+              title: '개봉 후 보관 기한 지키기',
+              desc: '시럽제는 개봉하면 공기와 닿아 변질되기 쉬워요. 조제 시럽이나 항생제 시럽은 안내받은 보관 기한(보통 1~2주, 일반 시럽 1개월)이 지나면 아까워도 폐기하세요.'
+            }
+          ],
+          hotspots: [
+            {
+              label: '갈색 차광병',
+              kicker: '핵심 포인트 1 · 차광 유리병',
+              title: '빛을 막아주는 갈색 병과 흔들기',
+              body: '갈색 병은 햇빛에 약 성분이 변하는 것을 막아줍니다. 먹기 전 가볍게 흔들어 섞고, 개봉 날짜를 적어 보관 기한을 꼭 지켜주세요.',
+              localPos: new THREE.Vector3(-0.62, 1.35, 0.48),
+              focusCam: new THREE.Vector3(-1.1, 2.3, 4.8)
+            },
+            {
+              label: '계량컵 눈금',
+              kicker: '핵심 포인트 2 · mL 눈금',
+              title: '눈높이에서 정확한 mL 눈금 맞추기',
+              body: '밥숟가락은 크기가 제각각이라 부정확합니다. 전용 계량컵을 평평한 곳에 두고 눈높이를 맞춰 정해진 눈금(예: 10mL)까지 정확히 따르세요.',
+              localPos: new THREE.Vector3(1.05, 0.58, 0.56),
+              focusCam: new THREE.Vector3(1.5, 2.0, 4.3)
+            },
+            {
+              label: '안전 뚜껑',
+              kicker: '핵심 포인트 3 · 안전 보관',
+              title: '사용 후 어린이 보호 뚜껑 꼭 닫기',
+              body: '시럽은 달콤한 향이 나 어린이 사고 위험이 높아요. 사용 후 뚜껑을 눌러 돌리는 안전마개를 끝까지 잠그고 서늘한 곳에 보관하세요.',
+              localPos: new THREE.Vector3(-0.62, 2.15, 0.0),
+              focusCam: new THREE.Vector3(-0.9, 3.0, 4.5)
+            }
+          ]
+        },
+        {
+          id: 'ointment',
+          kicker: '03 · 피부 외용 의약품 (상처 치료제·파스)',
+          title: '연고 및 외용제',
+          subtitle: '피부 바깥에만 바르고 붙이는 외용제는 위생이 핵심이에요.',
+          summary:
+            '상처 연고나 파스는 먹는 약과 달리 피부에 직접 작용합니다. 세균 감염과 피부 자극을 막는 올바른 사용법을 지켜야 합니다.',
+          isDanger: false,
+          rules: [
+            {
+              title: '바르기 전후 손 깨끗이 씻기',
+              desc: '손에 묻은 세균이 상처로 들어가거나, 약이 묻은 손으로 눈을 비빌 수 있어요. 연고나 파스를 만지기 전후에는 반드시 비누로 손을 씻으세요.'
+            },
+            {
+              title: '입구나 면봉을 사용해 오염 방지하기',
+              desc: '연고 튜브 끝을 상처 부위에 직접 대면 튜브 안까지 세균이 번식할 수 있어요. 깨끗한 면봉에 적당량을 덜어 부드럽게 펴 바르세요.'
+            },
+            {
+              title: '눈·입 등 점막 금지 및 파스 시간 지키기',
+              desc: '피부 연고는 눈·입·콧속 같은 점막에 바르면 위험해요. 파스는 권장 시간(보통 8~12시간)을 넘겨 오래 붙이면 피부 발진이나 화상이 생길 수 있습니다.'
+            }
+          ],
+          hotspots: [
+            {
+              label: '연고 튜브',
+              kicker: '핵심 포인트 1 · 튜브 위생',
+              title: '눈·입 점막 금지 및 튜브 청결',
+              body: '외용 연고는 정해진 피부 부위에만 얇게 바르세요. 눈에 들어가거나 먹지 않도록 주의하고, 사용 후에는 튜브 입구를 닦고 뚜껑을 닫아주세요.',
+              localPos: new THREE.Vector3(-0.78, 0.52, -0.05),
+              focusCam: new THREE.Vector3(-1.35, 2.05, 4.3)
+            },
+            {
+              label: '짜낸 연고·면봉',
+              kicker: '핵심 포인트 2 · 면봉 도포',
+              title: '면봉을 사용해 세균 오염 막기',
+              body: '상처에 튜브 입구를 직접 대지 말고 깨끗한 면봉에 연고를 덜어 발라 주세요. 바르기 전후 손 씻기도 잊지 마세요!',
+              localPos: new THREE.Vector3(0.14, 0.22, 0.92),
+              focusCam: new THREE.Vector3(0.35, 1.85, 4.1)
+            },
+            {
+              label: '파스 시트',
+              kicker: '핵심 포인트 3 · 파스 부착 시간',
+              title: '부착 시간(8~12시간)을 꼭 지키세요',
+              body: '파스를 며칠씩 계속 붙이거나 떼자마자 같은 자리에 바로 붙이면 피부가 크게 상할 수 있어요. 떼어낸 뒤에는 피부가 쉴 시간을 주세요.',
+              localPos: new THREE.Vector3(0.92, 0.28, -0.3),
+              focusCam: new THREE.Vector3(1.55, 2.15, 4.15)
+            }
+          ]
+        },
+        {
+          id: 'hazard',
+          kicker: '04 · 약물 오남용 및 중독 예방 경고',
+          title: '유해 약물·고카페인 주의',
+          subtitle: '정해진 양을 넘기거나 검증되지 않은 약물은 절대 금물이에요.',
+          summary:
+            '에너지음료와 약을 함께 먹거나, 출처를 알 수 없는 알약·젤리를 호기심에 섭취하면 성장기 건강에 치명적인 위험을 초래합니다.',
+          isDanger: true,
+          rules: [
+            {
+              title: '고카페인 음료와 감기약·진통제 동시 섭취 위험',
+              desc: '종합감기약과 진통제에도 카페인이 들어있는 경우가 많아요. 에너지음료와 함께 마시면 카페인이 과다해져 심장이 빠르게 뛰고 어지러움·구토가 생길 수 있습니다.'
+            },
+            {
+              title: '타인이 건네는 출처 불명 알약·젤리 절대 거절',
+              desc: '친구나 모르는 사람이 "공부 잘되는 약", "기분 좋아지는 젤리"라고 주더라도 포장이나 처방이 확인되지 않으면 절대 받지 말고 단호히 거절하세요.'
+            },
+            {
+              title: '정해진 용법·용량 초과 시 심각한 부작용',
+              desc: '약을 많이 먹는다고 빨리 낫지 않아요. 정해진 횟수와 양을 넘겨 복용하면 간이나 신장이 크게 손상될 수 있으니 반드시 보호자·의사·약사의 지시를 따르세요.'
+            }
+          ],
+          hotspots: [
+            {
+              label: '고카페인 경고 라벨',
+              kicker: '위험 경고 1 · 카페인 중복',
+              title: '약과 에너지음료를 같이 먹지 마세요',
+              body: '고카페인 음료와 감기약·두통약을 함께 먹으면 일일 카페인 허용량을 훌쩍 넘겨 두근거림, 불면, 위통 등 급성 부작용이 나타납니다.',
+              localPos: new THREE.Vector3(-0.62, 1.32, 0.56),
+              focusCam: new THREE.Vector3(-1.1, 2.2, 4.7)
+            },
+            {
+              label: '출처 불명 알약',
+              kicker: '위험 경고 2 · 유해 약물 거절',
+              title: '남이 주는 정체불명 알약·젤리 NO!',
+              body: '포장지가 없거나 출처를 모르는 알약·사탕·젤리는 마약류 등 유해 약물일 수 있어요. 호기심으로라도 절대 입에 대지 마세요.',
+              localPos: new THREE.Vector3(0.88, 0.34, 0.68),
+              focusCam: new THREE.Vector3(1.4, 2.0, 4.3)
+            },
+            {
+              label: '과다복용 주의(!)',
+              kicker: '위험 경고 3 · 용량 초과',
+              title: '정해진 용법·용량을 넘기면 독이 돼요',
+              body: '아프다고 한 번에 두 배씩 먹거나 약을 섞어 먹으면 간과 신장이 손상됩니다. 반드시 1회 복용량과 복용 간격을 지키세요.',
+              localPos: new THREE.Vector3(0.95, 1.65, -0.25),
+              focusCam: new THREE.Vector3(1.5, 2.5, 4.7)
+            }
+          ]
+        },
+        {
+          id: 'disposal',
+          kicker: '05 · 환경과 이웃을 지키는 마무리',
+          title: '폐의약품 올바른 분리배출',
+          subtitle: '남은 약도 끝까지 안전하게 전용 수거함으로 보내야 해요.',
+          summary:
+            '유효기간이 지났거나 다 먹지 않고 남은 약을 아무 곳에나 버리면 우리 강과 땅, 그리고 동물과 사람에게 다시 되돌아옵니다.',
+          isDanger: false,
+          rules: [
+            {
+              title: '변기나 싱크대에 버리지 않기',
+              desc: '약을 하수구로 흘려보내면 정수 처리 후에도 미세 성분이 남아 강물과 토양을 오염시키고, 내성이 생긴 세균(슈퍼박테리아)을 만들 수 있어요.'
+            },
+            {
+              title: '가루약·알약은 포장지를 제거해 모으기',
+              desc: '알약은 플라스틱·알루미늄 포장판(PTP)에서 껍질을 벗겨 알약만 한 봉투에 모으고, 가루약은 약봉지 그대로 모아 배출하세요. 겉상자와 설명서는 종이로 분리수거합니다.'
+            },
+            {
+              title: '물약은 한 병에 모아 전용 수거함으로 배출',
+              desc: '남은 시럽·물약은 한 병에 모으고 새지 않게 뚜껑을 꼭 닫아 가까운 약국, 보건소, 주민센터에 설치된 폐의약품 수거함에 넣어 주세요.'
+            }
+          ],
+          hotspots: [
+            {
+              label: '폐의약품 수거함',
+              kicker: '배출 방법 1 · 전용 수거함',
+              title: '약국·보건소·주민센터 수거함 이용',
+              body: '가정에서 남은 약은 일반 쓰레기봉투나 재활용품에 섞어 버리지 말고, 가까운 약국이나 보건소·주민센터의 전용 수거함에 넣어 주세요.',
+              localPos: new THREE.Vector3(-0.55, 1.55, 0.58),
+              focusCam: new THREE.Vector3(-1.0, 2.5, 5.0)
+            },
+            {
+              label: 'PTP 포장판·약봉투',
+              kicker: '배출 방법 2 · 포장 분리',
+              title: '알약은 포장판(PTP)에서 분리해 모아요',
+              body: '플라스틱·은박 포장판과 종이 상자는 따로 분리배출하고, 알맹이만 비닐봉투 등에 한데 모으면 수거 후 안전한 소각 처리에 큰 도움이 됩니다.',
+              localPos: new THREE.Vector3(1.12, 0.45, 0.65),
+              focusCam: new THREE.Vector3(1.6, 2.2, 4.5)
+            },
+            {
+              label: '모아둔 물약 병',
+              kicker: '배출 방법 3 · 물약·하수구 금지',
+              title: '변기·싱크대 금지! 한 병에 모아 닫기',
+              body: '남은 시럽을 싱크대나 변기에 부으면 수질·토양 오염의 주범이 돼요. 한 병에 모아서 뚜껑을 꽉 닫은 채로 수거함에 배출하세요.',
+              localPos: new THREE.Vector3(0.88, 0.72, -0.58),
+              focusCam: new THREE.Vector3(1.4, 2.1, 4.5)
+            }
+          ]
+        }
+      ];
+
+      const QUIZ_QUESTIONS = [
+        {
+          category: '정제·캡슐제',
+          question: '알약이 너무 커서 삼키기 힘들 때는 서방정이나 캡슐도 마음대로 가루로 부수거나 열어서 먹어도 된다.',
+          answer: false,
+          explanation:
+            '정답은 X입니다. 서방정·장용정 같은 특수 알약이나 캡슐을 임의로 부수면 약 성분이 한꺼번에 몸에 흡수되어 부작용이 생기거나 위가 손상될 수 있습니다. 반드시 약사나 의사에게 먼저 물어보세요.'
+        },
+        {
+          category: '시럽제·계량컵',
+          question: '물약(시럽)은 병째 마시지 않고, 복용 전 가볍게 흔든 뒤 전용 계량컵이나 계량스푼의 눈금을 보고 정확한 양만 먹어야 한다.',
+          answer: true,
+          explanation:
+            '정답은 O입니다. 병째 마시면 세균 오염과 과다 복용의 위험이 있습니다. 가라앉은 약 성분이 섞이도록 흔든 뒤 mL 눈금이 있는 계량 도구를 사용해야 합니다.'
+        },
+        {
+          category: '연고·파스',
+          question: '피부에 바르는 상처 연고는 입구가 상처에 닿지 않게 면봉으로 바르고, 파스는 정해진 부착 시간을 지켜 떼어내야 한다.',
+          answer: true,
+          explanation:
+            '정답은 O입니다. 바르기 전후 손을 깨끗이 씻고 면봉을 사용하면 연고 오염을 막을 수 있습니다. 파스 역시 권장 시간(보통 8~12시간)을 넘기면 피부 발진이 생길 수 있어 시간을 꼭 지켜야 합니다.'
+        },
+        {
+          category: '유해 약물·고카페인',
+          question: '시험 공부를 위해 에너지음료(고카페인)와 감기약·두통약을 같이 먹으면 집중력이 더 좋아지므로 괜찮다.',
+          answer: false,
+          explanation:
+            '정답은 X입니다. 감기약·진통제에도 카페인이 들어있는 경우가 많아 고카페인 음료와 함께 마시면 심장 두근거림, 불면증, 구토 등 카페인 과다 부작용이 발생합니다.'
+        },
+        {
+          category: '폐의약품 분리배출',
+          question: '유효기간이 지난 시럽과 알약은 변기나 싱크대에 버리지 말고, 알약은 포장지를 벗겨 모아서 약국·보건소·주민센터 수거함에 버려야 한다.',
+          answer: true,
+          explanation:
+            '정답은 O입니다. 약을 하수구에 버리면 수질과 토양이 심각하게 오염됩니다. 알약은 포장지를 제거해 모으고 물약은 한 병에 모아 전용 수거함에 배출해야 합니다.'
+        }
+      ];
+
+      // =========================================================================
+      // 2. PROCEDURAL CANVAS TEXTURE HELPERS (Zero 404 External Assets)
+      // =========================================================================
+      function makeLabelTexture(drawFn, width = 512, height = 256, maxAniso = 4) {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        drawFn(ctx, width, height);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = maxAniso;
+        tex.needsUpdate = true;
+        return tex;
+      }
+
+      function createContactShadowTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(128, 128, 12, 128, 128, 124);
+        grad.addColorStop(0, 'rgba(15, 23, 42, 0.28)');
+        grad.addColorStop(0.55, 'rgba(15, 23, 42, 0.11)');
+        grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return tex;
+      }
+
+      // =========================================================================
+      // 3. THREE.JS SCENE & SOFTWARE-WEBGL GUARD INITIALIZATION
+      // =========================================================================
+      const canvasMount = document.getElementById('canvasMount');
+      const webglFallback = document.getElementById('webglFallback');
+
+      const isSoftwareGl = (() => {
+        try {
+          const probe = document.createElement('canvas');
+          const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+          if (!gl) return true;
+          const ext = gl.getExtension('WEBGL_debug_renderer_info');
+          const param = ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER;
+          const gpu = String(gl.getParameter(param) || '');
+          gl.getExtension('WEBGL_lose_context')?.loseContext();
+          return /SwiftShader|llvmpipe|softpipe|Software|Basic Render/i.test(gpu);
+        } catch {
+          return true;
+        }
+      })();
+
+      let renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          antialias: !isSoftwareGl,
+          alpha: true,
+          powerPreference: 'high-performance'
+        });
+      } catch (e) {
+        webglFallback.classList.add('visible');
+        throw e;
+      }
+
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = !isSoftwareGl;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      canvasMount.appendChild(renderer.domElement);
+
+      const maxAniso = Math.min(8, renderer.capabilities.getMaxAnisotropy() || 1);
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0xe6eef6, 0.032);
+
+      // Studio Environment Reflection (mandatory for crisp glass/metal/capsule speculars)
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      const envTex = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environment = envTex;
+      pmremGenerator.dispose();
+
+      // Camera & OrbitControls
+      const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
+      const DEFAULT_CAM_POS = new THREE.Vector3(0.4, 2.55, 5.65);
+      const DEFAULT_TARGET = new THREE.Vector3(0, 0.9, 0);
+      camera.position.copy(DEFAULT_CAM_POS);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.copy(DEFAULT_TARGET);
+      controls.enableDamping = !isSoftwareGl;
+      controls.dampingFactor = 0.07;
+      controls.enablePan = false;
+      controls.minDistance = 3.1;
+      controls.maxDistance = 9.5;
+      controls.minPolarAngle = 0.25;
+      controls.maxPolarAngle = Math.PI * 0.485;
+      controls.autoRotate = !isSoftwareGl;
+      controls.autoRotateSpeed = 0.85;
+
+      // 3-Point Warm/Cool Studio Lighting Rig
+      const hemiLight = new THREE.HemisphereLight(0xeef6ff, 0xcbd5e1, 0.85);
+      scene.add(hemiLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.85);
+      keyLight.position.set(4.5, 7.5, 5.0);
+      keyLight.castShadow = !isSoftwareGl;
+      keyLight.shadow.mapSize.set(1024, 1024);
+      keyLight.shadow.camera.near = 1;
+      keyLight.shadow.camera.far = 20;
+      keyLight.shadow.camera.left = -4;
+      keyLight.shadow.camera.right = 4;
+      keyLight.shadow.camera.top = 4;
+      keyLight.shadow.camera.bottom = -4;
+      keyLight.shadow.bias = -0.0005;
+      keyLight.shadow.normalBias = 0.02;
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0xbae6fd, 0.95);
+      rimLight.position.set(-4.5, 4.0, -5.0);
+      scene.add(rimLight);
+
+      // Grounded Studio Plinth Disc + Soft Contact Shadow
+      const plinthGroup = new THREE.Group();
+      const plinthGeo = new THREE.CylinderGeometry(2.35, 2.48, 0.14, 64);
+      const plinthMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: 0.45,
+        metalness: 0.05
+      });
+      const plinthMesh = new THREE.Mesh(plinthGeo, plinthMat);
+      plinthMesh.position.y = -0.07;
+      plinthMesh.receiveShadow = true;
+      plinthGroup.add(plinthMesh);
+
+      const plinthRimGeo = new THREE.TorusGeometry(2.36, 0.018, 12, 72);
+      const plinthRimMat = new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        roughness: 0.3,
+        metalness: 0.4
+      });
+      const plinthRim = new THREE.Mesh(plinthRimGeo, plinthRimMat);
+      plinthRim.rotation.x = Math.PI / 2;
+      plinthRim.position.y = 0.002;
+      plinthGroup.add(plinthRim);
+
+      const contactPlane = new THREE.Mesh(
+        new THREE.PlaneGeometry(5.6, 5.6),
+        new THREE.MeshBasicMaterial({
+          map: createContactShadowTexture(),
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.75
+        })
+      );
+      contactPlane.rotation.x = -Math.PI / 2;
+      contactPlane.position.y = -0.142;
+      plinthGroup.add(contactPlane);
+      scene.add(plinthGroup);
+
+      // =========================================================================
+      // 4. COMPOSITE PROCEDURAL 3D MODELS FOR ALL 5 CATEGORIES
+      // =========================================================================
+      const interactiveMeshes = [];
+
+      function tagHotspot(obj, hotspotIdx) {
+        obj.traverse((child) => {
+          if (child.isMesh) {
+            child.userData.hotspotIdx = hotspotIdx;
+            child.castShadow = true;
+            child.receiveShadow = true;
+            interactiveMeshes.push(child);
+          }
+        });
+      }
+
+      // -----------------------------------------------------------------------
+      // MODEL 1: 정제(알약) 및 캡슐제 + 물 한 컵
+      // -----------------------------------------------------------------------
+      function buildModel1() {
+        const root = new THREE.Group();
+
+        // 1) Two-tone Capsule Pill (Tilted floating hero)
+        const capsuleGroup = new THREE.Group();
+        capsuleGroup.position.set(-0.78, 0.92, 0.15);
+        capsuleGroup.rotation.set(0.32, 0.4, -0.48);
+
+        const capBlueMat = new THREE.MeshPhysicalMaterial({
+          color: 0x0284c7,
+          roughness: 0.16,
+          metalness: 0.02,
+          clearcoat: 0.95,
+          clearcoatRoughness: 0.08
+        });
+        const capWhiteMat = new THREE.MeshPhysicalMaterial({
+          color: 0xf8fafc,
+          roughness: 0.22,
+          metalness: 0.0,
+          clearcoat: 0.85,
+          clearcoatRoughness: 0.12
+        });
+
+        // Upper cap half (slightly larger diameter for authentic telescoping capsule look)
+        const capGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.56, 36, 1, false);
+        const capCyl = new THREE.Mesh(capGeo, capBlueMat);
+        capCyl.position.y = 0.28;
+        capsuleGroup.add(capCyl);
+
+        const capDome = new THREE.Mesh(
+          new THREE.SphereGeometry(0.36, 36, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+          capBlueMat
+        );
+        capDome.position.y = 0.56;
+        capsuleGroup.add(capDome);
+
+        // Seam collar ring
+        const seamRing = new THREE.Mesh(
+          new THREE.TorusGeometry(0.358, 0.015, 12, 36),
+          new THREE.MeshStandardMaterial({ color: 0x0369a1, roughness: 0.25 })
+        );
+        seamRing.rotation.x = Math.PI / 2;
+        seamRing.position.y = 0.005;
+        capsuleGroup.add(seamRing);
+
+        // Lower body half
+        const bodyCyl = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.335, 0.335, 0.56, 36),
+          capWhiteMat
+        );
+        bodyCyl.position.y = -0.28;
+        capsuleGroup.add(bodyCyl);
+
+        const bodyDome = new THREE.Mesh(
+          new THREE.SphereGeometry(0.335, 36, 20, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+          capWhiteMat
+        );
+        bodyDome.position.y = -0.56;
+        capsuleGroup.add(bodyDome);
+
+        // Printed dosage band decal on body
+        const capTex = makeLabelTexture((ctx, w, h) => {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(0, 20, w, 14);
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 48px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('500mg', w / 2, h / 2 + 10);
+        }, 256, 128, maxAniso);
+        const bandMesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.338, 0.338, 0.34, 36, 1, true),
+          new THREE.MeshStandardMaterial({ map: capTex, roughness: 0.25 })
+        );
+        bandMesh.position.y = -0.26;
+        capsuleGroup.add(bandMesh);
+
+        tagHotspot(capsuleGroup, 0);
+        root.add(capsuleGroup);
+
+        // 2) Scored Round Tablet with sculpted (+) cross groove + Companion Mint Tablet
+        const tabletGroup = new THREE.Group();
+        tabletGroup.position.set(0.35, 0.52, 0.65);
+        tabletGroup.rotation.set(0.28, -0.35, 0.14);
+
+        const tabletMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.62,
+          metalness: 0.02
+        });
+
+        // Lathe profile for beveled pharmaceutical tablet
+        const pillPts = [
+          new THREE.Vector2(0.0, -0.14),
+          new THREE.Vector2(0.42, -0.14),
+          new THREE.Vector2(0.48, -0.09),
+          new THREE.Vector2(0.48, 0.09),
+          new THREE.Vector2(0.42, 0.14),
+          new THREE.Vector2(0.0, 0.14)
+        ];
+        const tabletMesh = new THREE.Mesh(new THREE.LatheGeometry(pillPts, 48), tabletMat);
+        tabletGroup.add(tabletMesh);
+
+        // Sculpted cross (+) groove inlay on top face
+        const grooveMat = new THREE.MeshStandardMaterial({
+          color: 0x94a3b8,
+          roughness: 0.75
+        });
+        const grooveH = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.024, 0.055), grooveMat);
+        grooveH.position.y = 0.138;
+        tabletGroup.add(grooveH);
+        const grooveV = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.024, 0.76), grooveMat);
+        grooveV.position.y = 0.138;
+        tabletGroup.add(grooveV);
+
+        // Secondary coated oval tablet next to it
+        const ovalTablet = new THREE.Mesh(
+          new THREE.SphereGeometry(0.28, 32, 24),
+          new THREE.MeshPhysicalMaterial({
+            color: 0x38bdf8,
+            roughness: 0.28,
+            clearcoat: 0.75
+          })
+        );
+        ovalTablet.scale.set(1.28, 0.52, 0.86);
+        ovalTablet.position.set(-0.32, -0.28, 0.35);
+        ovalTablet.rotation.set(0.15, 0.55, 0.25);
+        tabletGroup.add(ovalTablet);
+
+        tagHotspot(tabletGroup, 1);
+        root.add(tabletGroup);
+
+        // 3) Clear Glass of Water (200mL) on right side
+        const glassGroup = new THREE.Group();
+        glassGroup.position.set(1.38, 0.0, -0.35);
+
+        const glassPts = [
+          new THREE.Vector2(0.0, 0.0),
+          new THREE.Vector2(0.42, 0.0),
+          new THREE.Vector2(0.52, 1.35),
+          new THREE.Vector2(0.48, 1.35),
+          new THREE.Vector2(0.39, 0.1),
+          new THREE.Vector2(0.0, 0.1)
+        ];
+        const glassMat = new THREE.MeshPhysicalMaterial({
+          color: 0xe0f2fe,
+          roughness: 0.08,
+          metalness: 0.0,
+          transmission: isSoftwareGl ? 0 : 0.85,
+          transparent: true,
+          opacity: isSoftwareGl ? 0.38 : 0.95,
+          ior: 1.5,
+          thickness: 0.4,
+          depthWrite: false
+        });
+        const glassMesh = new THREE.Mesh(new THREE.LatheGeometry(glassPts, 40), glassMat);
+        glassMesh.renderOrder = 3;
+        glassGroup.add(glassMesh);
+
+        // Water volume inside
+        const waterMesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.46, 0.38, 0.96, 36),
+          new THREE.MeshPhysicalMaterial({
+            color: 0x7dd3fc,
+            roughness: 0.08,
+            transparent: true,
+            opacity: 0.65,
+            clearcoat: 1.0
+          })
+        );
+        waterMesh.position.y = 0.59;
+        waterMesh.renderOrder = 2;
+        glassGroup.add(waterMesh);
+
+        // Water surface rim highlight
+        const waterTop = new THREE.Mesh(
+          new THREE.CircleGeometry(0.46, 36),
+          new THREE.MeshPhysicalMaterial({
+            color: 0xbae6fd,
+            roughness: 0.05,
+            transparent: true,
+            opacity: 0.85
+          })
+        );
+        waterTop.rotation.x = -Math.PI / 2;
+        waterTop.position.y = 1.072;
+        glassGroup.add(waterTop);
+
+        tagHotspot(glassGroup, 2);
+        root.add(glassGroup);
+
+        // Set floating targets
+        root.userData.floaters = [
+          { obj: capsuleGroup, baseY: 0.92, amp: 0.07, speed: 1.5, phase: 0 },
+          { obj: tabletGroup, baseY: 0.52, amp: 0.05, speed: 1.8, phase: 1.4 }
+        ];
+        return root;
+      }
+
+      // -----------------------------------------------------------------------
+      // MODEL 2: 시럽제(물약) 및 계량컵
+      // -----------------------------------------------------------------------
+      function buildModel2() {
+        const root = new THREE.Group();
+
+        // 1) Amber Glass Syrup Bottle
+        const bottleGroup = new THREE.Group();
+        bottleGroup.position.set(-0.62, 0.0, 0.05);
+
+        const bottlePts = [
+          new THREE.Vector2(0.0, 0.0),
+          new THREE.Vector2(0.56, 0.0),
+          new THREE.Vector2(0.62, 0.08),
+          new THREE.Vector2(0.62, 1.32),
+          new THREE.Vector2(0.58, 1.48),
+          new THREE.Vector2(0.28, 1.72),
+          new THREE.Vector2(0.28, 1.95),
+          new THREE.Vector2(0.32, 1.98),
+          new THREE.Vector2(0.27, 2.02),
+          new THREE.Vector2(0.22, 2.02)
+        ];
+        const amberGlassMat = new THREE.MeshPhysicalMaterial({
+          color: 0x7c2d12,
+          roughness: 0.1,
+          metalness: 0.02,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.08,
+          transmission: isSoftwareGl ? 0 : 0.62,
+          transparent: true,
+          opacity: isSoftwareGl ? 0.82 : 0.96,
+          ior: 1.52,
+          thickness: 0.8
+        });
+        const bottleMesh = new THREE.Mesh(new THREE.LatheGeometry(bottlePts, 48), amberGlassMat);
+        bottleMesh.renderOrder = 2;
+        bottleGroup.add(bottleMesh);
+
+        // Syrup liquid inside
+        const innerLiquid = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.56, 0.56, 1.08, 36),
+          new THREE.MeshStandardMaterial({
+            color: 0x451a03,
+            roughness: 0.15
+          })
+        );
+        innerLiquid.position.y = 0.62;
+        bottleGroup.add(innerLiquid);
+
+        // Pharmacy Syrup Label
+        const syrupLabelTex = makeLabelTexture((ctx, w, h) => {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(0, 0, w, 58);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 30px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('어린이 해열 시럽', w / 2, 39);
+
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 26px sans-serif';
+          ctx.fillText('복용 전 가볍게 흔드세요', w / 2, 108);
+
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fillRect(36, 134, w - 72, 92);
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(36, 134, w - 72, 92);
+
+          ctx.fillStyle = '#0369a1';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText('1회 권장량: 계량컵 확인', w / 2, 170);
+          ctx.fillStyle = '#334155';
+          ctx.font = '20px sans-serif';
+          ctx.fillText('개봉 후 보관기한 준수 · 차광보관', w / 2, 206);
+        }, 512, 256, maxAniso);
+
+        const labelMat = new THREE.MeshStandardMaterial({
+          map: syrupLabelTex,
+          roughness: 0.45,
+          polygonOffset: true,
+          polygonOffsetFactor: -1
+        });
+        const bottleLabel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.626, 0.626, 0.96, 40, 1, true, -Math.PI * 0.42, Math.PI * 0.84),
+          labelMat
+        );
+        bottleLabel.position.y = 0.72;
+        bottleGroup.add(bottleLabel);
+
+        tagHotspot(bottleGroup, 0);
+        root.add(bottleGroup);
+
+        // 2) Child-Resistant Ribbed Safety Cap (separate hotspot target)
+        const capGroup = new THREE.Group();
+        capGroup.position.set(-0.62, 2.04, 0.05);
+        const capMat = new THREE.MeshStandardMaterial({
+          color: 0xf8fafc,
+          roughness: 0.35
+        });
+        const capBase = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.34, 36), capMat);
+        capGroup.add(capBase);
+
+        // Knurled grip ribs using InstancedMesh
+        const ribGeo = new THREE.BoxGeometry(0.025, 0.28, 0.03);
+        const ribInst = new THREE.InstancedMesh(ribGeo, capMat, 24);
+        const dummy = new THREE.Object3D();
+        for (let i = 0; i < 24; i++) {
+          const angle = (i / 24) * Math.PI * 2;
+          dummy.position.set(Math.cos(angle) * 0.355, 0, Math.sin(angle) * 0.355);
+          dummy.rotation.y = -angle;
+          dummy.updateMatrix();
+          ribInst.setMatrixAt(i, dummy.matrix);
+        }
+        ribInst.computeBoundingSphere();
+        capGroup.add(ribInst);
+
+        const capTop = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.31, 0.34, 0.06, 32),
+          new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 })
+        );
+        capTop.position.y = 0.19;
+        capGroup.add(capTop);
+
+        tagHotspot(capGroup, 2);
+        root.add(capGroup);
+
+        // 3) Transparent Graduated Dosing Cup + Dosing Spoon
+        const cupGroup = new THREE.Group();
+        cupGroup.position.set(1.02, 0.0, 0.42);
+
+        const cupPts = [
+          new THREE.Vector2(0.0, 0.0),
+          new THREE.Vector2(0.38, 0.0),
+          new THREE.Vector2(0.49, 0.95),
+          new THREE.Vector2(0.52, 0.97),
+          new THREE.Vector2(0.46, 0.97),
+          new THREE.Vector2(0.35, 0.06),
+          new THREE.Vector2(0.0, 0.06)
+        ];
+        const cupMat = new THREE.MeshPhysicalMaterial({
+          color: 0xf0f9ff,
+          roughness: 0.15,
+          transparent: true,
+          opacity: 0.45,
+          clearcoat: 1.0,
+          depthWrite: false
+        });
+        const cupMesh = new THREE.Mesh(new THREE.LatheGeometry(cupPts, 40), cupMat);
+        cupMesh.renderOrder = 3;
+        cupGroup.add(cupMesh);
+
+        // Sharp mL graduation marks texture wrapped on outer cup wall
+        const scaleTex = makeLabelTexture((ctx, w, h) => {
+          ctx.clearRect(0, 0, w, h);
+          ctx.strokeStyle = '#0f172a';
+          ctx.fillStyle = '#0f172a';
+          ctx.lineWidth = 4;
+          ctx.font = 'bold 26px sans-serif';
+          ctx.textAlign = 'left';
+          const marks = [
+            { y: 50, label: '20 mL' },
+            { y: 98, label: '15 mL' },
+            { y: 146, label: '10 mL' },
+            { y: 194, label: '5 mL' }
+          ];
+          // Vertical spine
+          ctx.beginPath();
+          ctx.moveTo(155, 42);
+          ctx.lineTo(155, 212);
+          ctx.stroke();
+
+          marks.forEach((m) => {
+            ctx.beginPath();
+            ctx.moveTo(120, m.y);
+            ctx.lineTo(165, m.y);
+            ctx.stroke();
+            ctx.fillText(m.label, 178, m.y + 8);
+          });
+        }, 512, 256, maxAniso);
+
+        const scaleShell = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.486, 0.392, 0.82, 40, 1, true, -Math.PI * 0.45, Math.PI * 0.9),
+          new THREE.MeshBasicMaterial({
+            map: scaleTex,
+            transparent: true,
+            depthWrite: false
+          })
+        );
+        scaleShell.position.y = 0.48;
+        scaleShell.renderOrder = 4;
+        cupGroup.add(scaleShell);
+
+        // Pink/Strawberry Syrup filled accurately to 10 mL mark
+        const cupSyrup = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.415, 0.35, 0.38, 36),
+          new THREE.MeshPhysicalMaterial({
+            color: 0xf43f5e,
+            roughness: 0.14,
+            transparent: true,
+            opacity: 0.85,
+            clearcoat: 0.9
+          })
+        );
+        cupSyrup.position.y = 0.25;
+        cupSyrup.renderOrder = 2;
+        cupGroup.add(cupSyrup);
+
+        // Dosing spoon resting cleanly beside cup
+        const spoonGroup = new THREE.Group();
+        spoonGroup.position.set(-0.25, 0.06, 0.72);
+        spoonGroup.rotation.y = 0.38;
+        const spoonMat = new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          roughness: 0.3,
+          metalness: 0.05
+        });
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.04, 0.12), spoonMat);
+        handle.position.x = -0.35;
+        spoonGroup.add(handle);
+        const bowl = new THREE.Mesh(
+          new THREE.SphereGeometry(0.2, 24, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+          spoonMat
+        );
+        bowl.scale.set(1.2, 0.65, 0.95);
+        bowl.position.set(0.25, 0.05, 0);
+        spoonGroup.add(bowl);
+        cupGroup.add(spoonGroup);
+
+        tagHotspot(cupGroup, 1);
+        root.add(cupGroup);
+
+        return root;
+      }
+
+      // -----------------------------------------------------------------------
+      // MODEL 3: 연고 및 외용제 (자연스러운 연고 튜브 + 물결 연고 + 면봉 + 라운드 파스 시트)
+      // -----------------------------------------------------------------------
+      function buildModel3() {
+        const root = new THREE.Group();
+
+        // Helper: Round corners of a dense grid geometry smoothly without overlapping triangles
+        function roundRectify(x, z, hw, hd, cr) {
+          const iw = hw - cr;
+          const id = hd - cr;
+          const cx = Math.max(-iw, Math.min(iw, x));
+          const cz = Math.max(-id, Math.min(id, z));
+          const dx = x - cx;
+          const dz = z - cz;
+          if (dx !== 0 && dz !== 0) {
+            const maxD = Math.max(Math.abs(dx), Math.abs(dz));
+            const eucD = Math.hypot(dx, dz);
+            const factor = eucD > 1e-5 ? maxD / eucD : 1;
+            return [cx + dx * factor, cz + dz * factor];
+          }
+          return [x, z];
+        }
+
+        // 1) Realistic Squeezed & Crimped Ointment Tube
+        // Built along local Z: z=0 is shoulder, z=-1.38 is pinched flat tail
+        const tubeGroup = new THREE.Group();
+        tubeGroup.position.set(-0.46, 0.25, 0.34);
+        tubeGroup.rotation.set(0.07, 0.56, 0.0);
+
+        const tubeLen = 1.38;
+        const baseR = 0.265;
+        const lenSegs = 32;
+        const radSegs = 44;
+        const positions = [];
+        const uvs = [];
+        const indices = [];
+
+        for (let i = 0; i <= lenSegs; i++) {
+          const t = i / lenSegs; // 0 = shoulder, 1 = tail
+          const z = -t * tubeLen;
+          const flatten = Math.pow(t, 1.32);
+          // Slight natural squeeze indentation on mid-body
+          const squeeze = 1 - 0.14 * Math.sin(Math.max(0, t - 0.15) * Math.PI * 1.1);
+          const rx = baseR * (1 + 0.48 * flatten);
+          const ry = Math.max(0.024, baseR * (1 - 0.91 * flatten) * squeeze);
+
+          for (let j = 0; j <= radSegs; j++) {
+            const u = j / radSegs;
+            // u=0 -> -X (left), u=0.25 -> +Y (top), u=0.5 -> +X (right)
+            const theta = Math.PI - u * Math.PI * 2;
+            const px = Math.cos(theta) * rx;
+            const py = Math.sin(theta) * ry;
+            positions.push(px, py, z);
+            // v=0 at nozzle (t=0), v=1 at tail (t=1) so text reads upright
+            uvs.push(u, t);
+          }
+        }
+
+        for (let i = 0; i < lenSegs; i++) {
+          for (let j = 0; j < radSegs; j++) {
+            const a = i * (radSegs + 1) + j;
+            const b = a + radSegs + 1;
+            const c = a + 1;
+            const d = b + 1;
+            indices.push(a, c, b);
+            indices.push(c, d, b);
+          }
+        }
+
+        const tubeGeo = new THREE.BufferGeometry();
+        tubeGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        tubeGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+        tubeGeo.setIndex(indices);
+        tubeGeo.computeVertexNormals();
+
+        const tubeLabelTex = makeLabelTexture((ctx, w, h) => {
+          // Soft mint-cream pharmaceutical wrap
+          ctx.fillStyle = '#f2fbf6';
+          ctx.fillRect(0, 0, w, h);
+
+          // Top & bottom trim bands
+          ctx.fillStyle = '#10b981';
+          ctx.fillRect(0, 0, w, 34);
+          ctx.fillStyle = '#a7f3d0';
+          ctx.fillRect(0, h - 38, w, 38);
+
+          // Center label focused on top face (u ~ 0.25)
+          const cx = w * 0.25;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect(cx - 126, 76, 252, 224, 24);
+          ctx.fill();
+          ctx.strokeStyle = '#059669';
+          ctx.lineWidth = 6;
+          ctx.stroke();
+
+          ctx.fillStyle = '#059669';
+          ctx.font = 'bold 42px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('상처 연고', cx, 148);
+
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('피부 외용 전용', cx, 204);
+
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 21px sans-serif';
+          ctx.fillText('눈·입 점막 금지', cx, 254);
+
+          // Back face notice (u ~ 0.75)
+          const bx = w * 0.75;
+          ctx.fillStyle = '#334155';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('사용 전후 손 씻기', bx, 165);
+          ctx.font = '20px sans-serif';
+          ctx.fillText('면봉으로 덜어 바르기', bx, 212);
+        }, 1024, 384, maxAniso);
+
+        const tubeBody = new THREE.Mesh(
+          tubeGeo,
+          new THREE.MeshPhysicalMaterial({
+            map: tubeLabelTex,
+            roughness: 0.36,
+            metalness: 0.08,
+            clearcoat: 0.35,
+            clearcoatRoughness: 0.25
+          })
+        );
+        tubeGroup.add(tubeBody);
+
+        // Flat Crimped Seal Strip at the tail (z = -tubeLen)
+        const crimpWidth = baseR * 1.48 * 2 + 0.02;
+        const crimpMat = new THREE.MeshStandardMaterial({
+          color: 0xdcfce7,
+          roughness: 0.32,
+          metalness: 0.18
+        });
+        const crimpFlange = new THREE.Mesh(
+          new THREE.BoxGeometry(crimpWidth, 0.048, 0.13),
+          crimpMat
+        );
+        crimpFlange.position.set(0, 0, -tubeLen - 0.055);
+        tubeGroup.add(crimpFlange);
+
+        // Embossed crimp ridges
+        for (let r = 0; r < 3; r++) {
+          const ridge = new THREE.Mesh(
+            new THREE.BoxGeometry(crimpWidth - 0.02, 0.054, 0.015),
+            new THREE.MeshStandardMaterial({ color: 0xa7f3d0, roughness: 0.4 })
+          );
+          ridge.position.set(0, 0, -tubeLen - 0.025 - r * 0.032);
+          tubeGroup.add(ridge);
+        }
+
+        // Smooth Lathe Shoulder + Threaded Nozzle at z >= 0
+        const neckPts = [
+          new THREE.Vector2(baseR, 0.0),
+          new THREE.Vector2(baseR * 0.88, 0.06),
+          new THREE.Vector2(baseR * 0.56, 0.13),
+          new THREE.Vector2(0.082, 0.18),
+          new THREE.Vector2(0.066, 0.19),
+          new THREE.Vector2(0.062, 0.34),
+          new THREE.Vector2(0.046, 0.355),
+          new THREE.Vector2(0.028, 0.355)
+        ];
+        const neckGeo = new THREE.LatheGeometry(neckPts, 36);
+        neckGeo.rotateX(Math.PI / 2); // Align lathe +Y along +Z
+        const neckMat = new THREE.MeshStandardMaterial({
+          color: 0xe2e8f0,
+          roughness: 0.28,
+          metalness: 0.45
+        });
+        const neckMesh = new THREE.Mesh(neckGeo, neckMat);
+        tubeGroup.add(neckMesh);
+
+        // Fine screw thread rings on nozzle
+        for (let tIdx = 0; tIdx < 3; tIdx++) {
+          const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.064, 0.008, 8, 24),
+            neckMat
+          );
+          ring.position.z = 0.225 + tIdx * 0.035;
+          tubeGroup.add(ring);
+        }
+
+        // Ribbed Screw Cap resting cleanly on plinth beside the tube
+        const capGroup = new THREE.Group();
+        capGroup.position.set(-1.12, 0.13, 0.82);
+        capGroup.rotation.set(0.0, 0.35, Math.PI / 2);
+        const capMat = new THREE.MeshStandardMaterial({
+          color: 0x059669,
+          roughness: 0.34,
+          metalness: 0.05
+        });
+        const capCore = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.115, 0.135, 0.24, 24),
+          capMat
+        );
+        capGroup.add(capCore);
+        const capRibs = new THREE.InstancedMesh(
+          new THREE.BoxGeometry(0.016, 0.22, 0.02),
+          capMat,
+          14
+        );
+        const capDummy = new THREE.Object3D();
+        for (let i = 0; i < 14; i++) {
+          const ang = (i / 14) * Math.PI * 2;
+          capDummy.position.set(Math.cos(ang) * 0.125, 0, Math.sin(ang) * 0.125);
+          capDummy.rotation.y = -ang;
+          capDummy.updateMatrix();
+          capRibs.setMatrixAt(i, capDummy.matrix);
+        }
+        capRibs.computeBoundingSphere();
+        capGroup.add(capRibs);
+        root.add(capGroup);
+
+        tagHotspot(tubeGroup, 0);
+        root.add(tubeGroup);
+
+        // 2) Wavy Squeezed Ointment Cream Ribbon + Sterile Cotton Swab
+        const swabGroup = new THREE.Group();
+
+        tubeGroup.updateMatrix();
+        const nozzleTip = new THREE.Vector3(0, 0, 0.345).applyMatrix4(tubeGroup.matrix);
+        const creamCurve = new THREE.CatmullRomCurve3([
+          nozzleTip.clone(),
+          new THREE.Vector3(nozzleTip.x + 0.11, 0.11, nozzleTip.z + 0.16),
+          new THREE.Vector3(nozzleTip.x + 0.22, 0.055, nozzleTip.z + 0.08),
+          new THREE.Vector3(nozzleTip.x + 0.34, 0.048, nozzleTip.z + 0.23),
+          new THREE.Vector3(nozzleTip.x + 0.47, 0.044, nozzleTip.z + 0.14),
+          new THREE.Vector3(nozzleTip.x + 0.59, 0.038, nozzleTip.z + 0.26)
+        ]);
+
+        // Custom variable-radius cream ribbon so tip tapers organically
+        const cSegs = 48;
+        const cRadSegs = 14;
+        const cPos = [];
+        const cIdx = [];
+        const frames = creamCurve.computeFrenetFrames(cSegs, false);
+        const pt = new THREE.Vector3();
+        const normalVec = new THREE.Vector3();
+
+        for (let i = 0; i <= cSegs; i++) {
+          const u = i / cSegs;
+          creamCurve.getPointAt(u, pt);
+          const r =
+            u < 0.15
+              ? THREE.MathUtils.lerp(0.024, 0.046, u / 0.15)
+              : u > 0.78
+              ? THREE.MathUtils.lerp(0.046, 0.012, (u - 0.78) / 0.22)
+              : 0.046 + Math.sin(u * Math.PI * 3) * 0.004;
+
+          const N = frames.normals[i];
+          const B = frames.binormals[i];
+          for (let j = 0; j <= cRadSegs; j++) {
+            const v = (j / cRadSegs) * Math.PI * 2;
+            const sin = Math.sin(v);
+            const cos = -Math.cos(v);
+            normalVec.x = cos * N.x + sin * B.x;
+            normalVec.y = cos * N.y + sin * B.y;
+            normalVec.z = cos * N.z + sin * B.z;
+            cPos.push(
+              pt.x + r * normalVec.x,
+              pt.y + r * 0.75 * normalVec.y,
+              pt.z + r * normalVec.z
+            );
+          }
+        }
+        for (let i = 0; i < cSegs; i++) {
+          for (let j = 0; j < cRadSegs; j++) {
+            const a = i * (cRadSegs + 1) + j;
+            const b = a + cRadSegs + 1;
+            const c = a + 1;
+            const d = b + 1;
+            cIdx.push(a, b, c);
+            cIdx.push(c, b, d);
+          }
+        }
+        const creamGeo = new THREE.BufferGeometry();
+        creamGeo.setAttribute('position', new THREE.Float32BufferAttribute(cPos, 3));
+        creamGeo.setIndex(cIdx);
+        creamGeo.computeVertexNormals();
+
+        const creamMat = new THREE.MeshPhysicalMaterial({
+          color: 0xfffef7,
+          roughness: 0.18,
+          clearcoat: 0.9,
+          clearcoatRoughness: 0.12
+        });
+        const creamMesh = new THREE.Mesh(creamGeo, creamMat);
+        swabGroup.add(creamMesh);
+
+        // Sterile Cotton Swab resting beside squeezed cream
+        const stick = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.02, 0.02, 1.32, 16),
+          new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.55 })
+        );
+        stick.rotation.set(0, -0.18, Math.PI / 2);
+        stick.position.set(0.28, 0.045, 1.18);
+        swabGroup.add(stick);
+
+        const cottonMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 });
+        const tipL = new THREE.Mesh(new THREE.SphereGeometry(0.056, 20, 16), cottonMat);
+        tipL.scale.set(1.65, 0.88, 0.88);
+        tipL.rotation.y = -0.18;
+        tipL.position.set(-0.37, 0.045, 1.06);
+        swabGroup.add(tipL);
+
+        const tipR = tipL.clone();
+        tipR.position.set(0.93, 0.045, 1.3);
+        swabGroup.add(tipR);
+
+        tagHotspot(swabGroup, 1);
+        root.add(swabGroup);
+
+        // 3) Natural Rounded-Corner Medicated Pas (Patch) Sheet + Curved Release Film
+        const pasGroup = new THREE.Group();
+        pasGroup.position.set(0.92, 0.02, -0.32);
+        pasGroup.rotation.set(0.08, -0.36, 0.02);
+
+        const pasW = 1.48;
+        const pasD = 1.02;
+        const pasHW = pasW / 2;
+        const pasHD = pasD / 2;
+        const pasCR = 0.18;
+
+        const pasGeo = new THREE.BoxGeometry(pasW, 0.024, pasD, 44, 1, 32);
+        const pasPosAttr = pasGeo.attributes.position;
+        const pasUvAttr = pasGeo.attributes.uv;
+
+        for (let i = 0; i < pasPosAttr.count; i++) {
+          const ox = pasPosAttr.getX(i);
+          const oy = pasPosAttr.getY(i);
+          const oz = pasPosAttr.getZ(i);
+
+          const [rx, rz] = roundRectify(ox, oz, pasHW, pasHD, pasCR);
+          // Subtle soft cloth arch so the patch sits naturally like flexible fabric
+          const nx = rx / pasHW;
+          const drapeY = 0.075 * (1 - nx * nx) + 0.015 * Math.sin(nx * 2.2);
+
+          pasPosAttr.setXYZ(i, rx, oy + drapeY, rz);
+          // Re-project clean top/bottom planar UVs
+          if (Math.abs(oy) > 0.005) {
+            pasUvAttr.setXY(i, rx / pasW + 0.5, 1 - (rz / pasD + 0.5));
+          }
+        }
+        pasGeo.computeVertexNormals();
+
+        const pasTex = makeLabelTexture((ctx, w, h) => {
+          // Warm skin-beige non-woven fabric tone
+          ctx.fillStyle = '#ead8c3';
+          ctx.fillRect(0, 0, w, h);
+
+          // Subtle micro-perforated breathable fabric dots
+          ctx.fillStyle = 'rgba(180, 152, 122, 0.28)';
+          for (let y = 12; y < h; y += 16) {
+            for (let x = 12; x < w; x += 16) {
+              ctx.beginPath();
+              ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          // Clean subtle border & minimalist medical text
+          ctx.strokeStyle = 'rgba(161, 132, 102, 0.25)';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(18, 18, w - 36, h - 36);
+
+          ctx.fillStyle = '#5c4b3b';
+          ctx.font = 'bold 30px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('파스 시트 (외용)', w / 2, h / 2 - 12);
+          ctx.fillStyle = '#786350';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText('권장 부착 시간: 8~12시간', w / 2, h / 2 + 28);
+        }, 512, 352, maxAniso);
+
+        const pasBody = new THREE.Mesh(
+          pasGeo,
+          new THREE.MeshStandardMaterial({
+            map: pasTex,
+            roughness: 0.92,
+            metalness: 0.0
+          })
+        );
+        pasGroup.add(pasBody);
+
+        // Curved Transparent Release Film (이형지) gently peeling back on one side
+        const filmGeo = new THREE.PlaneGeometry(pasW * 0.96, pasD * 0.96, 40, 24);
+        filmGeo.rotateX(-Math.PI / 2);
+        const fPos = filmGeo.attributes.position;
+        const fHW = (pasW * 0.96) / 2;
+        const fHD = (pasD * 0.96) / 2;
+
+        for (let i = 0; i < fPos.count; i++) {
+          const ox = fPos.getX(i);
+          const oz = fPos.getZ(i);
+          const [rx, rz] = roundRectify(ox, oz, fHW, fHD, pasCR * 0.92);
+          const nx = rx / pasHW;
+          const baseDrape = 0.075 * (1 - nx * nx) + 0.015 * Math.sin(nx * 2.2) + 0.016;
+
+          // Peel lifts up smoothly on the right edge (rx > 0.08)
+          if (rx > 0.08) {
+            const p = (rx - 0.08) / (fHW - 0.08);
+            const curlX = 0.08 + (rx - 0.08) * (1 - 0.28 * p * p);
+            const curlY = baseDrape + 0.34 * Math.pow(p, 1.45);
+            fPos.setXYZ(i, curlX, curlY, rz);
+          } else {
+            fPos.setXYZ(i, rx, baseDrape, rz);
+          }
+        }
+        filmGeo.computeVertexNormals();
+
+        const filmMesh = new THREE.Mesh(
+          filmGeo,
+          new THREE.MeshPhysicalMaterial({
+            color: 0xe0f2fe,
+            roughness: 0.14,
+            transparent: true,
+            opacity: 0.42,
+            clearcoat: 1.0,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          })
+        );
+        filmMesh.renderOrder = 3;
+        pasGroup.add(filmMesh);
+
+        tagHotspot(pasGroup, 2);
+        root.add(pasGroup);
+
+        return root;
+      }
+
+      // -----------------------------------------------------------------------
+      // MODEL 4: 유해 약물·고카페인 주의 (경고 캔 + 흐트러진 알약 + 3D 경고 ! 마크)
+      // -----------------------------------------------------------------------
+      function buildModel4() {
+        const root = new THREE.Group();
+
+        // 1) High-Caffeine Energy Drink Can
+        const canGroup = new THREE.Group();
+        canGroup.position.set(-0.62, 0.0, 0.05);
+
+        const canPts = [
+          new THREE.Vector2(0.0, 0.04),
+          new THREE.Vector2(0.44, 0.0),
+          new THREE.Vector2(0.54, 0.14),
+          new THREE.Vector2(0.54, 1.88),
+          new THREE.Vector2(0.46, 2.08),
+          new THREE.Vector2(0.49, 2.13),
+          new THREE.Vector2(0.43, 2.13),
+          new THREE.Vector2(0.0, 2.06)
+        ];
+        const aluMat = new THREE.MeshStandardMaterial({
+          color: 0xd1d5db,
+          metalness: 0.88,
+          roughness: 0.22
+        });
+        const canMesh = new THREE.Mesh(new THREE.LatheGeometry(canPts, 48), aluMat);
+        canGroup.add(canMesh);
+
+        // Pull-tab on top
+        const pullTab = new THREE.Mesh(
+          new THREE.BoxGeometry(0.16, 0.025, 0.28),
+          aluMat
+        );
+        pullTab.position.set(0.05, 2.1, 0.06);
+        canGroup.add(pullTab);
+
+        // Bold High-Caffeine Hazard Wrap
+        const canWrapTex = makeLabelTexture((ctx, w, h) => {
+          ctx.fillStyle = '#18181b';
+          ctx.fillRect(0, 0, w, h);
+
+          // Hazard amber/red diagonal stripe header
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(0, 0, w, 64);
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(0, 64, w, 14);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 34px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚠ 고카페인 함유 주의', w / 2, 44);
+
+          // Lightning bolt graphic
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.moveTo(w / 2 + 12, 92);
+          ctx.lineTo(w / 2 - 22, 144);
+          ctx.lineTo(w / 2 + 2, 144);
+          ctx.lineTo(w / 2 - 14, 198);
+          ctx.lineTo(w / 2 + 26, 134);
+          ctx.lineTo(w / 2 + 2, 134);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#fca5a5';
+          ctx.font = 'bold 22px sans-serif';
+          ctx.fillText('감기약·진통제와 동시 섭취 금지', w / 2, 232);
+        }, 512, 256, maxAniso);
+
+        const canLabel = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.544, 0.544, 1.68, 48, 1, true),
+          new THREE.MeshStandardMaterial({
+            map: canWrapTex,
+            roughness: 0.28,
+            metalness: 0.35
+          })
+        );
+        canLabel.position.y = 1.01;
+        canLabel.rotation.y = -Math.PI * 0.5;
+        canGroup.add(canLabel);
+
+        tagHotspot(canGroup, 0);
+        root.add(canGroup);
+
+        // 2) Scattered Mystery Pills & Unlabeled Jelly-like Capsules
+        const pillsGroup = new THREE.Group();
+        pillsGroup.position.set(0.85, 0.0, 0.45);
+
+        const mysteryConfigs = [
+          { pos: [-0.2, 0.14, 0.3], rot: [0.3, 0.5, 1.4], color: 0xe11d48 },
+          { pos: [0.22, 0.14, 0.12], rot: [1.2, 0.2, 0.8], color: 0x9333ea },
+          { pos: [0.05, 0.14, -0.3], rot: [0.8, 1.1, 0.3], color: 0xf59e0b },
+          { pos: [-0.35, 0.13, -0.18], rot: [0.1, 0.4, 1.5], color: 0xf43f5e },
+          { pos: [0.38, 0.14, 0.45], rot: [1.4, 0.6, 0.2], color: 0xec4899 }
+        ];
+
+        mysteryConfigs.forEach((cfg, idx) => {
+          const mat = new THREE.MeshPhysicalMaterial({
+            color: cfg.color,
+            roughness: 0.2,
+            clearcoat: 0.9
+          });
+          const geo =
+            idx % 2 === 0
+              ? new THREE.CapsuleGeometry(0.11, 0.22, 12, 20)
+              : new THREE.CylinderGeometry(0.16, 0.16, 0.12, 24);
+          const m = new THREE.Mesh(geo, mat);
+          m.position.set(...cfg.pos);
+          m.rotation.set(...cfg.rot);
+          pillsGroup.add(m);
+        });
+
+        // Question mark (?) warning block over scattered pills
+        const qTex = makeLabelTexture((ctx, w, h) => {
+          ctx.fillStyle = '#fef2f2';
+          ctx.fillRect(0, 0, w, h);
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 10;
+          ctx.strokeRect(8, 8, w - 16, h - 16);
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 80px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('?', w / 2, 92);
+          ctx.font = 'bold 28px sans-serif';
+          ctx.fillText('출처 불명', w / 2, 145);
+        }, 256, 176, maxAniso);
+
+        const qSign = new THREE.Mesh(
+          new THREE.BoxGeometry(0.62, 0.42, 0.06),
+          new THREE.MeshStandardMaterial({ map: qTex, roughness: 0.4 })
+        );
+        qSign.position.set(0.05, 0.56, 0.05);
+        qSign.rotation.y = -0.25;
+        pillsGroup.add(qSign);
+
+        tagHotspot(pillsGroup, 1);
+        root.add(pillsGroup);
+
+        // 3) Floating 3D Hazard Triangle (!) Icon
+        const warnGroup = new THREE.Group();
+        warnGroup.position.set(0.95, 1.55, -0.25);
+
+        const triShape = new THREE.Shape();
+        triShape.moveTo(0, 0.52);
+        triShape.lineTo(-0.48, -0.34);
+        triShape.lineTo(0.48, -0.34);
+        triShape.closePath();
+
+        const triGeo = new THREE.ExtrudeGeometry(triShape, {
+          depth: 0.12,
+          bevelEnabled: true,
+          bevelThickness: 0.03,
+          bevelSize: 0.03,
+          bevelSegments: 3
+        });
+        triGeo.center();
+        const warnMesh = new THREE.Mesh(
+          triGeo,
+          new THREE.MeshStandardMaterial({
+            color: 0xf59e0b,
+            roughness: 0.3,
+            metalness: 0.15,
+            emissive: 0x78350f,
+            emissiveIntensity: 0.25
+          })
+        );
+        warnGroup.add(warnMesh);
+
+        const exBar = new THREE.Mesh(
+          new THREE.BoxGeometry(0.11, 0.34, 0.18),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 })
+        );
+        exBar.position.set(0, 0.04, 0.02);
+        warnGroup.add(exBar);
+
+        const exDot = new THREE.Mesh(
+          new THREE.BoxGeometry(0.11, 0.11, 0.18),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 })
+        );
+        exDot.position.set(0, -0.22, 0.02);
+        warnGroup.add(exDot);
+
+        tagHotspot(warnGroup, 2);
+        root.add(warnGroup);
+
+        root.userData.floaters = [
+          { obj: warnGroup, baseY: 1.55, amp: 0.08, speed: 2.0, phase: 0.5 }
+        ];
+        return root;
+      }
+
+      // -----------------------------------------------------------------------
+      // MODEL 5: 폐의약품 올바른 분리배출 (전용 수거함 + 약봉투 + PTP 포장판 + 물약 병)
+      // -----------------------------------------------------------------------
+      function buildModel5() {
+        const root = new THREE.Group();
+
+        // 1) Dedicated Medication Collection Box
+        const binGroup = new THREE.Group();
+        binGroup.position.set(-0.58, 0.0, 0.0);
+
+        const binBodyMat = new THREE.MeshStandardMaterial({
+          color: 0x0d9488,
+          roughness: 0.35,
+          metalness: 0.1
+        });
+        const binWhiteMat = new THREE.MeshStandardMaterial({
+          color: 0xf8fafc,
+          roughness: 0.4
+        });
+
+        // Main cabinet
+        const cabinet = new THREE.Mesh(new THREE.BoxGeometry(1.18, 1.55, 0.92), binBodyMat);
+        cabinet.position.y = 0.78;
+        binGroup.add(cabinet);
+
+        // Top hood & drop chute
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.42, 0.98), binWhiteMat);
+        hood.position.y = 1.75;
+        binGroup.add(hood);
+
+        const slotFrame = new THREE.Mesh(
+          new THREE.BoxGeometry(0.76, 0.16, 0.08),
+          new THREE.MeshStandardMaterial({ color: 0x0f766e, roughness: 0.4 })
+        );
+        slotFrame.position.set(0, 1.75, 0.48);
+        binGroup.add(slotFrame);
+
+        const slotVoid = new THREE.Mesh(
+          new THREE.BoxGeometry(0.64, 0.08, 0.04),
+          new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 })
+        );
+        slotVoid.position.set(0, 1.75, 0.51);
+        binGroup.add(slotVoid);
+
+        // Front Signage Panel
+        const binSignTex = makeLabelTexture((ctx, w, h) => {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = '#059669';
+          ctx.fillRect(0, 0, w, 72);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 34px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('폐의약품 전용 수거함', w / 2, 48);
+
+          // Pharmacy Cross Symbol
+          ctx.fillStyle = '#10b981';
+          ctx.fillRect(w / 2 - 14, 100, 28, 76);
+          ctx.fillRect(w / 2 - 38, 124, 76, 28);
+
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 24px sans-serif';
+          ctx.fillText('약국 · 보건소 · 주민센터', w / 2, 214);
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.fillText('변기 · 싱크대 배출 금지', w / 2, 242);
+        }, 384, 268, maxAniso);
+
+        const signBoard = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.96, 0.85),
+          new THREE.MeshStandardMaterial({ map: binSignTex, roughness: 0.4 })
+        );
+        signBoard.position.set(0, 0.84, 0.464);
+        binGroup.add(signBoard);
+
+        tagHotspot(binGroup, 0);
+        root.add(binGroup);
+
+        // 2) Prescription Paper Bag + PTP Blister Pack + Separated Pills
+        const ptpGroup = new THREE.Group();
+        ptpGroup.position.set(1.05, 0.0, 0.52);
+
+        // Prescription paper packet
+        const bagTex = makeLabelTexture((ctx, w, h) => {
+          ctx.fillStyle = '#fefce8';
+          ctx.fillRect(0, 0, w, h);
+          ctx.strokeStyle = '#ca8a04';
+          ctx.lineWidth = 6;
+          ctx.strokeRect(8, 8, w - 16, h - 16);
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 32px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('조제 약봉투', w / 2, 72);
+          ctx.fillStyle = '#475569';
+          ctx.font = '22px sans-serif';
+          ctx.fillText('포장지 분리 배출', w / 2, 120);
+        }, 256, 192, maxAniso);
+
+        const paperBag = new THREE.Mesh(
+          new THREE.BoxGeometry(0.75, 0.05, 0.56),
+          new THREE.MeshStandardMaterial({ map: bagTex, roughness: 0.85 })
+        );
+        paperBag.position.set(-0.1, 0.04, 0.24);
+        paperBag.rotation.y = 0.25;
+        ptpGroup.add(paperBag);
+
+        // PTP Blister Sheet (Metallic silver foil + clear thermoformed blister domes)
+        const ptpBase = new THREE.Mesh(
+          new THREE.BoxGeometry(0.86, 0.03, 0.54),
+          new THREE.MeshStandardMaterial({
+            color: 0xe2e8f0,
+            metalness: 0.85,
+            roughness: 0.22
+          })
+        );
+        ptpBase.position.set(0.08, 0.26, -0.05);
+        ptpBase.rotation.set(0.38, -0.25, -0.15);
+        ptpGroup.add(ptpBase);
+
+        const domeMat = new THREE.MeshPhysicalMaterial({
+          color: 0xf0f9ff,
+          roughness: 0.1,
+          transparent: true,
+          opacity: 0.58,
+          clearcoat: 1.0
+        });
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < 3; c++) {
+            const dome = new THREE.Mesh(
+              new THREE.SphereGeometry(0.09, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+              domeMat
+            );
+            dome.position.set((c - 1) * 0.24, 0.015, (r - 0.5) * 0.22);
+            ptpBase.add(dome);
+          }
+        }
+
+        // Loose popped-out tablets ready for disposal bag
+        const pillMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+        for (let i = 0; i < 3; i++) {
+          const p = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.06, 20), pillMat);
+          p.position.set(-0.28 + i * 0.22, 0.09, 0.48);
+          ptpGroup.add(p);
+        }
+
+        tagHotspot(ptpGroup, 1);
+        root.add(ptpGroup);
+
+        // 3) Collected Liquid Medicine Bottle (sealed for disposal)
+        const liqGroup = new THREE.Group();
+        liqGroup.position.set(0.85, 0.0, -0.58);
+
+        const disposalBottle = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.32, 0.34, 0.92, 32),
+          new THREE.MeshPhysicalMaterial({
+            color: 0xf8fafc,
+            roughness: 0.2,
+            transparent: true,
+            opacity: 0.72,
+            clearcoat: 0.9
+          })
+        );
+        disposalBottle.position.y = 0.46;
+        liqGroup.add(disposalBottle);
+
+        const innerPool = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.28, 0.3, 0.48, 28),
+          new THREE.MeshStandardMaterial({ color: 0xfb7185, roughness: 0.2 })
+        );
+        innerPool.position.y = 0.26;
+        liqGroup.add(innerPool);
+
+        const bottleCap = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.18, 0.19, 0.18, 24),
+          new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.35 })
+        );
+        bottleCap.position.y = 1.0;
+        liqGroup.add(bottleCap);
+
+        tagHotspot(liqGroup, 2);
+        root.add(liqGroup);
+
+        return root;
+      }
+
+      const categoryModels = [
+        buildModel1(),
+        buildModel2(),
+        buildModel3(),
+        buildModel4(),
+        buildModel5()
+      ];
+
+      categoryModels.forEach((m, idx) => {
+        m.visible = idx === 0;
+        m.scale.setScalar(idx === 0 ? 1 : 0.001);
+        scene.add(m);
+      });
+
+      if (!isSoftwareGl) {
+        renderer.compile(scene, camera);
+      }
+
+      // =========================================================================
+      // 5. APPLICATION STATE & INTERACTION CONTROLLER
+      // =========================================================================
+      const state = {
+        activeCategory: 0,
+        outgoingCategory: -1,
+        panelMode: 'learn', // 'learn' | 'quiz'
+        selectedHotspot: -1, // -1 = none
+        autoRotate: !isSoftwareGl,
+        cameraTargetPos: DEFAULT_CAM_POS.clone(),
+        cameraTargetLook: DEFAULT_TARGET.clone(),
+        isCameraTransitioning: false,
+        quizIndex: 0,
+        quizAnswers: new Array(QUIZ_QUESTIONS.length).fill(null) // null | boolean
+      };
+
+      // DOM References
+      const stagePane = document.getElementById('stagePane');
+      const stageKicker = document.getElementById('stageKicker');
+      const stageTitle = document.getElementById('stageTitle');
+      const hotspotLayer = document.getElementById('hotspotLayer');
+      const tooltipBubble = document.getElementById('tooltipBubble');
+      const tooltipKicker = document.getElementById('tooltipKicker');
+      const tooltipTitle = document.getElementById('tooltipTitle');
+      const tooltipBody = document.getElementById('tooltipBody');
+      const tooltipCounter = document.getElementById('tooltipCounter');
+      const tooltipCloseBtn = document.getElementById('tooltipCloseBtn');
+      const tooltipNextBtn = document.getElementById('tooltipNextBtn');
+      const toggleRotateBtn = document.getElementById('toggleRotateBtn');
+      const rotateLabel = document.getElementById('rotateLabel');
+      const resetViewBtn = document.getElementById('resetViewBtn');
+      const keyPointsBtn = document.getElementById('keyPointsBtn');
+      const headerQuizBtn = document.getElementById('headerQuizBtn');
+      const modeLearnBtn = document.getElementById('modeLearnBtn');
+      const modeQuizBtn = document.getElementById('modeQuizBtn');
+      const panelMeta = document.getElementById('panelMeta');
+      const panelScroll = document.getElementById('panelScroll');
+      const panelFooter = document.getElementById('panelFooter');
+      const catTabs = Array.from(document.querySelectorAll('.cat-tab'));
+
+      let hotspotPinEls = [];
+
+      function buildHotspotPins() {
+        hotspotLayer.innerHTML = '';
+        const cat = CATEGORIES[state.activeCategory];
+        hotspotPinEls = cat.hotspots.map((hp, idx) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'hotspot-pin';
+          btn.innerHTML = `<span class="hotspot-index">${idx + 1}</span><span>${hp.label}</span>`;
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectHotspot(idx);
+          });
+          hotspotLayer.appendChild(btn);
+          return btn;
+        });
+      }
+
+      function selectHotspot(idx) {
+        const cat = CATEGORIES[state.activeCategory];
+        if (idx < 0 || idx >= cat.hotspots.length) {
+          closeTooltip();
+          return;
+        }
+        state.selectedHotspot = idx;
+        const hp = cat.hotspots[idx];
+
+        // Update speech-bubble tooltip content
+        tooltipKicker.textContent = hp.kicker;
+        tooltipTitle.textContent = hp.title;
+        tooltipBody.textContent = hp.body;
+        tooltipCounter.textContent = `${idx + 1} / ${cat.hotspots.length}`;
+        tooltipBubble.classList.remove('hidden');
+        tooltipBubble.classList.add('visible');
+
+        // Smooth camera focus toward selected feature
+        state.cameraTargetPos.copy(hp.focusCam);
+        state.cameraTargetLook.copy(hp.localPos).multiplyScalar(0.55);
+        state.cameraTargetLook.y = Math.max(0.5, state.cameraTargetLook.y);
+        state.isCameraTransitioning = true;
+
+        // Pause auto-rotation while reading tooltip
+        controls.autoRotate = false;
+        state.autoRotate = false;
+        rotateLabel.textContent = '자동 회전 켜기';
+
+        updateHotspotVisuals();
+        if (state.panelMode === 'learn') {
+          syncJumpButtonStates();
+        }
+      }
+
+      function closeTooltip() {
+        state.selectedHotspot = -1;
+        tooltipBubble.classList.remove('visible');
+        tooltipBubble.classList.add('hidden');
+        updateHotspotVisuals();
+        if (state.panelMode === 'learn') {
+          syncJumpButtonStates();
+        }
+      }
+
+      function updateHotspotVisuals() {
+        hotspotPinEls.forEach((el, i) => {
+          el.classList.toggle('selected', i === state.selectedHotspot);
+        });
+      }
+
+      function syncJumpButtonStates() {
+        const btns = panelScroll.querySelectorAll('.hotspot-jump-btn');
+        btns.forEach((b, i) => {
+          b.classList.toggle('active', i === state.selectedHotspot);
+        });
+      }
+
+      function switchCategory(idx) {
+        if (idx === state.activeCategory) return;
+        state.outgoingCategory = state.activeCategory;
+        state.activeCategory = idx;
+        state.selectedHotspot = -1;
+
+        categoryModels[idx].visible = true;
+        categoryModels[idx].scale.setScalar(0.05);
+        categoryModels[idx].rotation.y = -0.35;
+
+        closeTooltip();
+        resetCamera();
+        updateCategoryUI();
+      }
+
+      function resetCamera() {
+        state.cameraTargetPos.copy(DEFAULT_CAM_POS);
+        state.cameraTargetLook.copy(DEFAULT_TARGET);
+        state.isCameraTransitioning = true;
+      }
+
+      function updateCategoryUI() {
+        const cat = CATEGORIES[state.activeCategory];
+        stageKicker.textContent = cat.kicker;
+        stageTitle.textContent = cat.title;
+        stagePane.classList.toggle('danger-mode', cat.isDanger);
+
+        // Adjust rim light / fog tint subtly for hazard category
+        if (cat.isDanger) {
+          scene.fog.color.setHex(0xf3e4e4);
+          rimLight.color.setHex(0xfca5a5);
+        } else {
+          scene.fog.color.setHex(0xe6eef6);
+          rimLight.color.setHex(0xbae6fd);
+        }
+
+        catTabs.forEach((tab, i) => {
+          const active = i === state.activeCategory;
+          tab.classList.toggle('active', active);
+          tab.classList.toggle('danger-theme', active && CATEGORIES[i].isDanger);
+        });
+
+        buildHotspotPins();
+        renderRightPanel();
+      }
+
+      function setPanelMode(mode) {
+        state.panelMode = mode;
+        modeLearnBtn.classList.toggle('active', mode === 'learn');
+        modeLearnBtn.setAttribute('aria-selected', mode === 'learn' ? 'true' : 'false');
+        modeQuizBtn.classList.toggle('active', mode === 'quiz');
+        modeQuizBtn.setAttribute('aria-selected', mode === 'quiz' ? 'true' : 'false');
+        headerQuizBtn.classList.toggle('quiz-active', mode === 'quiz');
+        renderRightPanel();
+      }
+
+      function renderRightPanel() {
+        if (state.panelMode === 'learn') {
+          renderLearnPanel();
+        } else {
+          renderQuizPanel();
+        }
+      }
+
+      function renderLearnPanel() {
+        const cat = CATEGORIES[state.activeCategory];
+        panelMeta.textContent = `${state.activeCategory + 1} / ${CATEGORIES.length} 단계`;
+
+        panelScroll.innerHTML = `
+          <div class="drug-header">
+            <div class="drug-meta-line ${cat.isDanger ? 'danger' : ''}">
+              <span>${cat.kicker}</span>
+            </div>
+            <h2 class="drug-title">${cat.title}</h2>
+            <p class="drug-summary">${cat.summary}</p>
+          </div>
+
+          <div>
+            <h3 class="section-label">올바른 사용법 · 핵심 수칙</h3>
+            <ul class="rules-list">
+              ${cat.rules
+                .map(
+                  (r, i) => `
+                <li class="rule-item ${cat.isDanger ? 'danger' : ''}">
+                  <span class="rule-num">${i + 1}</span>
+                  <div>
+                    <h4 class="rule-title">${r.title}</h4>
+                    <p class="rule-desc">${r.desc}</p>
+                  </div>
+                </li>
+              `
+                )
+                .join('')}
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="section-label">3D 모델 부위별 자세히 보기</h3>
+            <div class="hotspot-quick-list">
+              ${cat.hotspots
+                .map(
+                  (hp, i) => `
+                <button type="button" class="hotspot-jump-btn ${
+                  state.selectedHotspot === i ? 'active' : ''
+                }" data-jump="${i}">
+                  <span class="jump-left">
+                    <span class="jump-badge">${i + 1}</span>
+                    <span>${hp.label} · ${hp.title}</span>
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              `
+                )
+                .join('')}
+            </div>
+          </div>
+        `;
+
+        panelScroll.querySelectorAll('.hotspot-jump-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            selectHotspot(Number(btn.dataset.jump));
+          });
+        });
+
+        const nextIdx = (state.activeCategory + 1) % CATEGORIES.length;
+        const prevIdx = (state.activeCategory - 1 + CATEGORIES.length) % CATEGORIES.length;
+
+        panelFooter.innerHTML = `
+          <div class="footer-nav-row">
+            <button type="button" class="footer-secondary-btn" id="prevCatBtn">← 이전</button>
+            <button type="button" class="footer-action-btn" id="startQuizCta">
+              복용 OX 퀴즈 풀기 (5문제)
+            </button>
+            <button type="button" class="footer-secondary-btn" id="nextCatBtn">다음 →</button>
+          </div>
+        `;
+
+        document.getElementById('prevCatBtn').addEventListener('click', () => switchCategory(prevIdx));
+        document.getElementById('nextCatBtn').addEventListener('click', () => switchCategory(nextIdx));
+        document.getElementById('startQuizCta').addEventListener('click', () => setPanelMode('quiz'));
+      }
+
+      function renderQuizPanel() {
+        const total = QUIZ_QUESTIONS.length;
+        const answeredCount = state.quizAnswers.filter((a) => a !== null).length;
+        panelMeta.textContent = `OX 퀴즈 · ${Math.min(state.quizIndex + 1, total)} / ${total}`;
+
+        // Finished summary screen
+        if (state.quizIndex >= total) {
+          let score = 0;
+          QUIZ_QUESTIONS.forEach((q, i) => {
+            if (state.quizAnswers[i] === q.answer) score += 1;
+          });
+
+          let rank = '의약품 안전 새싹';
+          let comment = '아쉬운 문제를 다시 확인하고 3D 모델과 함께 복습해 보아요!';
+          if (score === total) {
+            rank = '최고의 의약품 안전 박사!';
+            comment = '모든 문제를 완벽하게 맞혔어요. 일상에서도 올바른 의약품 사용법을 실천해 보세요.';
+          } else if (score >= 3) {
+            rank = '든든한 건강 지킴이';
+            comment = '핵심 수칙을 잘 이해하고 있어요. 틀린 문제 해설을 한 번 더 읽어보세요.';
+          }
+
+          panelMeta.textContent = `최종 점수 · ${score} / ${total}`;
+          panelScroll.innerHTML = `
+            <div class="quiz-summary">
+              <div class="score-banner">
+                <div style="font-size: 13px; font-weight: 700; color: var(--text-muted);">
+                  복용 OX 퀴즈 결과
+                </div>
+                <div class="score-number">${score} / ${total}</div>
+                <h3 class="score-rank">${rank}</h3>
+                <p class="score-comment">${comment}</p>
+              </div>
+
+              <div>
+                <h3 class="section-label">문항별 정답 확인</h3>
+                <div class="review-list">
+                  ${QUIZ_QUESTIONS.map((q, i) => {
+                    const userAns = state.quizAnswers[i];
+                    const ok = userAns === q.answer;
+                    return `
+                      <div class="review-row">
+                        <div class="review-head">
+                          <span style="color: var(--text-muted);">문제 ${i + 1} · ${q.category}</span>
+                          <span style="color: ${ok ? 'var(--accent-emerald)' : 'var(--accent-red)'};">
+                            ${ok ? 'O 정답' : 'X 오답'} (정답: ${q.answer ? 'O' : 'X'})
+                          </span>
+                        </div>
+                        <p class="review-q">${q.question}</p>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+
+          panelFooter.innerHTML = `
+            <div class="footer-nav-row">
+              <button type="button" class="footer-secondary-btn" id="backLearnBtn">학습으로 돌아가기</button>
+              <button type="button" class="footer-action-btn" id="retryQuizBtn">퀴즈 다시 풀기</button>
+            </div>
+          `;
+
+          document.getElementById('backLearnBtn').addEventListener('click', () => setPanelMode('learn'));
+          document.getElementById('retryQuizBtn').addEventListener('click', () => {
+            state.quizIndex = 0;
+            state.quizAnswers = new Array(total).fill(null);
+            renderQuizPanel();
+          });
+          return;
+        }
+
+        // Active question
+        const q = QUIZ_QUESTIONS[state.quizIndex];
+        const chosen = state.quizAnswers[state.quizIndex];
+        const isAnswered = chosen !== null;
+        const isCorrect = isAnswered && chosen === q.answer;
+
+        panelScroll.innerHTML = `
+          <div class="quiz-progress-row">
+            <span style="font-size: 13px; font-weight: 700; color: var(--text-secondary);">
+              문제 ${state.quizIndex + 1} / ${total}
+            </span>
+            <div class="quiz-dots" aria-hidden="true">
+              ${QUIZ_QUESTIONS.map((item, idx) => {
+                let cls = 'quiz-step';
+                if (state.quizAnswers[idx] !== null) {
+                  cls += state.quizAnswers[idx] === item.answer ? ' correct' : ' wrong';
+                } else if (idx === state.quizIndex) {
+                  cls += ' current';
+                }
+                return `<span class="${cls}"></span>`;
+              }).join('')}
+            </div>
+          </div>
+
+          <div class="quiz-card">
+            <span class="quiz-category-tag">${q.category}</span>
+            <h2 class="quiz-question">${q.question}</h2>
+
+            <div class="ox-grid">
+              <button
+                type="button"
+                class="ox-btn o-btn ${
+                  isAnswered
+                    ? chosen === true
+                      ? isCorrect
+                        ? 'chosen-correct'
+                        : 'chosen-wrong'
+                      : q.answer === true
+                      ? 'reveal-answer'
+                      : ''
+                    : ''
+                }"
+                data-ans="true"
+                ${isAnswered ? 'disabled' : ''}
+              >
+                <span class="ox-symbol">O</span>
+                <span class="ox-label">맞아요 (O)</span>
+              </button>
+
+              <button
+                type="button"
+                class="ox-btn x-btn ${
+                  isAnswered
+                    ? chosen === false
+                      ? isCorrect
+                        ? 'chosen-correct'
+                        : 'chosen-wrong'
+                      : q.answer === false
+                      ? 'reveal-answer'
+                      : ''
+                    : ''
+                }"
+                data-ans="false"
+                ${isAnswered ? 'disabled' : ''}
+              >
+                <span class="ox-symbol">X</span>
+                <span class="ox-label">틀려요 (X)</span>
+              </button>
+            </div>
+          </div>
+
+          ${
+            isAnswered
+              ? `
+            <div class="quiz-feedback ${isCorrect ? 'correct' : 'wrong'}">
+              <div class="feedback-status">
+                <span>${isCorrect ? '✓ 정답이에요!' : '✕ 아쉽지만 오답이에요'}</span>
+              </div>
+              <p class="feedback-text">${q.explanation}</p>
+            </div>
+          `
+              : `
+            <p style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+              알맞은 답(O 또는 X)을 선택하면 바로 자세한 해설을 확인할 수 있어요.
+              (완료한 문항: ${answeredCount}/${total})
+            </p>
+          `
+          }
+        `;
+
+        panelScroll.querySelectorAll('.ox-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.quizAnswers[state.quizIndex] = btn.dataset.ans === 'true';
+            renderQuizPanel();
+          });
+        });
+
+        panelFooter.innerHTML = `
+          <div class="footer-nav-row">
+            <button type="button" class="footer-secondary-btn" id="quizToLearnBtn">학습 화면</button>
+            <button
+              type="button"
+              class="footer-action-btn"
+              id="quizNextBtn"
+              style="${!isAnswered ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
+              ${!isAnswered ? 'disabled' : ''}
+            >
+              ${state.quizIndex === total - 1 ? '결과 점수 확인하기' : '다음 문제 →'}
+            </button>
+          </div>
+        `;
+
+        document.getElementById('quizToLearnBtn').addEventListener('click', () => setPanelMode('learn'));
+        const nextBtn = document.getElementById('quizNextBtn');
+        if (isAnswered) {
+          nextBtn.addEventListener('click', () => {
+            state.quizIndex += 1;
+            renderQuizPanel();
+          });
+        }
+      }
+
+      // =========================================================================
+      // 6. RAYCASTING (CLICK 3D PARTS) & VIEWPORT EVENTS
+      // =========================================================================
+      const raycaster = new THREE.Raycaster();
+      const pointerNdc = new THREE.Vector2();
+      let pointerDownXY = { x: 0, y: 0 };
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        pointerDownXY.x = e.clientX;
+        pointerDownXY.y = e.clientY;
+      });
+
+      renderer.domElement.addEventListener('pointerup', (e) => {
+        const dist = Math.hypot(e.clientX - pointerDownXY.x, e.clientY - pointerDownXY.y);
+        if (dist > 6) return; // Ignore orbit drags
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointerNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(pointerNdc, camera);
+        const activeModel = categoryModels[state.activeCategory];
+        const hits = raycaster.intersectObjects(activeModel.children, true);
+
+        if (hits.length > 0) {
+          let obj = hits[0].object;
+          while (obj && obj.userData.hotspotIdx === undefined) {
+            obj = obj.parent;
+          }
+          if (obj && typeof obj.userData.hotspotIdx === 'number') {
+            selectHotspot(obj.userData.hotspotIdx);
+            return;
+          }
+        }
+      });
+
+      // Hover cursor feedback (throttled)
+      let lastHoverCheck = 0;
+      renderer.domElement.addEventListener('pointermove', (e) => {
+        const now = performance.now();
+        if (now - lastHoverCheck < 50) return;
+        lastHoverCheck = now;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointerNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointerNdc, camera);
+
+        const activeModel = categoryModels[state.activeCategory];
+        const hits = raycaster.intersectObjects(activeModel.children, true);
+        let foundHotspot = false;
+        if (hits.length > 0) {
+          let obj = hits[0].object;
+          while (obj && obj.userData.hotspotIdx === undefined) {
+            obj = obj.parent;
+          }
+          foundHotspot = Boolean(obj && typeof obj.userData.hotspotIdx === 'number');
+        }
+        renderer.domElement.style.cursor = foundHotspot ? 'pointer' : 'grab';
+      });
+
+      // Cancel scripted camera transition when user interacts manually
+      controls.addEventListener('start', () => {
+        state.isCameraTransitioning = false;
+      });
+
+      // Button Event Bindings
+      catTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          switchCategory(Number(tab.dataset.cat));
+        });
+      });
+
+      headerQuizBtn.addEventListener('click', () => {
+        setPanelMode(state.panelMode === 'quiz' ? 'learn' : 'quiz');
+      });
+
+      modeLearnBtn.addEventListener('click', () => setPanelMode('learn'));
+      modeQuizBtn.addEventListener('click', () => setPanelMode('quiz'));
+
+      tooltipCloseBtn.addEventListener('click', closeTooltip);
+      tooltipNextBtn.addEventListener('click', () => {
+        const len = CATEGORIES[state.activeCategory].hotspots.length;
+        const next = (state.selectedHotspot + 1) % len;
+        selectHotspot(next);
+      });
+
+      keyPointsBtn.addEventListener('click', () => {
+        const len = CATEGORIES[state.activeCategory].hotspots.length;
+        const next = state.selectedHotspot === -1 ? 0 : (state.selectedHotspot + 1) % len;
+        selectHotspot(next);
+      });
+
+      toggleRotateBtn.addEventListener('click', () => {
+        state.autoRotate = !state.autoRotate;
+        controls.autoRotate = state.autoRotate;
+        rotateLabel.textContent = state.autoRotate ? '회전 일시정지' : '자동 회전 켜기';
+      });
+
+      resetViewBtn.addEventListener('click', () => {
+        closeTooltip();
+        resetCamera();
+      });
+
+      // =========================================================================
+      // 7. RESIZE OBSERVER, PROJECTION & RENDER LOOP (Zero GC, Software-GL Safe)
+      // =========================================================================
+      const _projVec = new THREE.Vector3();
+      const _worldPos = new THREE.Vector3();
+      let stageW = 1;
+      let stageH = 1;
+
+      function syncSize() {
+        const rect = canvasMount.getBoundingClientRect();
+        stageW = Math.max(1, Math.floor(rect.width));
+        stageH = Math.max(1, Math.floor(rect.height));
+        camera.aspect = stageW / stageH;
+        camera.updateProjectionMatrix();
+        renderer.setSize(stageW, stageH, false);
+      }
+
+      const resizeObserver = new ResizeObserver(syncSize);
+      resizeObserver.observe(canvasMount);
+      syncSize();
+
+      // WebGL context loss safety
+      renderer.domElement.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        webglFallback.classList.add('visible');
+      });
+      renderer.domElement.addEventListener('webglcontextrestored', () => {
+        webglFallback.classList.remove('visible');
+      });
+
+      function updateHotspotOverlayPositions() {
+        const activeGroup = categoryModels[state.activeCategory];
+        const hotspots = CATEGORIES[state.activeCategory].hotspots;
+
+        hotspots.forEach((hp, i) => {
+          const pin = hotspotPinEls[i];
+          if (!pin) return;
+
+          _worldPos.copy(hp.localPos);
+          activeGroup.localToWorld(_worldPos);
+          _projVec.copy(_worldPos).project(camera);
+
+          if (_projVec.z > 1) {
+            pin.style.opacity = '0';
+            pin.style.pointerEvents = 'none';
+            return;
+          }
+
+          const sx = (_projVec.x * 0.5 + 0.5) * stageW;
+          const sy = (-_projVec.y * 0.5 + 0.5) * stageH;
+          const clampedX = Math.max(56, Math.min(stageW - 56, sx));
+          const clampedY = Math.max(76, Math.min(stageH - 68, sy));
+
+          pin.style.opacity = '1';
+          pin.style.pointerEvents = 'auto';
+          pin.style.left = `${clampedX.toFixed(1)}px`;
+          pin.style.top = `${clampedY.toFixed(1)}px`;
+
+          // Position speech-bubble tooltip smoothly beside the selected pin
+          if (i === state.selectedHotspot) {
+            const bubbleW = Math.min(310, stageW - 32);
+            const bubbleH = tooltipBubble.offsetHeight || 190;
+            let bx = clampedX + 22;
+            if (bx + bubbleW > stageW - 16) {
+              bx = clampedX - bubbleW - 22;
+            }
+            bx = Math.max(16, Math.min(stageW - bubbleW - 16, bx));
+
+            let by = clampedY - bubbleH * 0.45;
+            by = Math.max(74, Math.min(stageH - bubbleH - 70, by));
+
+            tooltipBubble.style.left = `${bx.toFixed(1)}px`;
+            tooltipBubble.style.top = `${by.toFixed(1)}px`;
+          }
+        });
+      }
+
+      const clock = new THREE.Clock();
+      let frameId = 0;
+
+      function afterDraw(cb) {
+        const gl = renderer.getContext();
+        const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        gl.flush();
+        const poll = () => {
+          const status = sync && gl.getSyncParameter(sync, gl.SYNC_STATUS);
+          if (status === gl.UNSIGNALED) {
+            frameId = window.setTimeout(poll, 5);
+          } else {
+            if (sync) gl.deleteSync(sync);
+            frameId = window.setTimeout(cb, 80);
+          }
+        };
+        frameId = window.setTimeout(poll, 5);
+      }
+
+      function animate() {
+        const delta = Math.min(0.05, clock.getDelta());
+        const elapsed = clock.getElapsedTime();
+
+        // Smooth outgoing / incoming model transition
+        if (state.outgoingCategory !== -1) {
+          const outM = categoryModels[state.outgoingCategory];
+          const nextS = THREE.MathUtils.damp(outM.scale.x, 0.001, 14, delta);
+          outM.scale.setScalar(nextS);
+          if (nextS < 0.02) {
+            outM.visible = false;
+            state.outgoingCategory = -1;
+          }
+        }
+
+        const inM = categoryModels[state.activeCategory];
+        const inScale = THREE.MathUtils.damp(inM.scale.x, 1.0, 9.5, delta);
+        inM.scale.setScalar(inScale);
+        inM.rotation.y = THREE.MathUtils.damp(inM.rotation.y, 0.0, 6.5, delta);
+
+        // Gentle organic floating motion on floating hero parts
+        const floaters = inM.userData.floaters;
+        if (floaters && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          for (let i = 0; i < floaters.length; i++) {
+            const f = floaters[i];
+            f.obj.position.y = f.baseY + Math.sin(elapsed * f.speed + f.phase) * f.amp;
+          }
+        }
+
+        // Smooth camera focus transition
+        if (state.isCameraTransitioning) {
+          camera.position.x = THREE.MathUtils.damp(
+            camera.position.x,
+            state.cameraTargetPos.x,
+            6.5,
+            delta
+          );
+          camera.position.y = THREE.MathUtils.damp(
+            camera.position.y,
+            state.cameraTargetPos.y,
+            6.5,
+            delta
+          );
+          camera.position.z = THREE.MathUtils.damp(
+            camera.position.z,
+            state.cameraTargetPos.z,
+            6.5,
+            delta
+          );
+          controls.target.x = THREE.MathUtils.damp(
+            controls.target.x,
+            state.cameraTargetLook.x,
+            7.5,
+            delta
+          );
+          controls.target.y = THREE.MathUtils.damp(
+            controls.target.y,
+            state.cameraTargetLook.y,
+            7.5,
+            delta
+          );
+          controls.target.z = THREE.MathUtils.damp(
+            controls.target.z,
+            state.cameraTargetLook.z,
+            7.5,
+            delta
+          );
+
+          if (camera.position.distanceTo(state.cameraTargetPos) < 0.02) {
+            state.isCameraTransitioning = false;
+          }
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+        updateHotspotOverlayPositions();
+
+        if (isSoftwareGl) {
+          afterDraw(animate);
+        } else {
+          frameId = requestAnimationFrame(animate);
+        }
+      }
+
+      // Initialize UI and start loop
+      if (isSoftwareGl) {
+        rotateLabel.textContent = '자동 회전 켜기';
+      }
+      updateCategoryUI();
+      animate();
+
+      window.addEventListener('beforeunload', () => {
+        cancelAnimationFrame(frameId);
+        clearTimeout(frameId);
+        resizeObserver.disconnect();
+        renderer.dispose();
+      });
+    </script>
+  </body>
+</html>
